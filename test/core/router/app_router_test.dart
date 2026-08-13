@@ -4,11 +4,35 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hoopmap/core/presentation/pages/not_found_page.dart';
 import 'package:hoopmap/core/router/app_router.dart';
+import 'package:hoopmap/features/courts/domain/court.dart';
+import 'package:hoopmap/features/courts/domain/court_with_distance.dart';
+import 'package:hoopmap/features/courts/presentation/nearby_courts_notifier.dart';
 import 'package:hoopmap/features/courts/presentation/pages/court_detail_page.dart';
 import 'package:hoopmap/features/courts/presentation/pages/courts_list_page.dart';
 
+final List<CourtWithDistance> _fixedCourts = [
+  CourtWithDistance(
+    court: Court(
+      id: 'court-a',
+      name: 'Terrain A',
+      latitude: 0,
+      longitude: 0,
+      hoopCount: 1,
+      isOutdoor: true,
+      createdAt: DateTime(2026, 1, 1),
+    ),
+    distanceInMeters: 450,
+  ),
+];
+
 Future<GoRouter> _pumpRouterApp(WidgetTester tester) async {
-  final container = ProviderContainer();
+  final container = ProviderContainer(
+    overrides: [
+      nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
+        yield _fixedCourts;
+      }),
+    ],
+  );
   addTearDown(container.dispose);
   final GoRouter router = container.read(goRouterProvider);
 

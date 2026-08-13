@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/courts/presentation/pages/court_detail_page.dart';
 import '../../features/courts/presentation/pages/courts_list_page.dart';
+import '../../features/courts/presentation/pages/courts_map_page.dart';
 import '../presentation/pages/not_found_page.dart';
 import 'routes.dart';
 
@@ -24,6 +25,11 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((ref) {
               final courtId = state.pathParameters[Routes.courtIdParam]!;
               return CourtDetailPage(courtId: courtId);
             },
+          ),
+          GoRoute(
+            path: Routes.map,
+            name: Routes.mapName,
+            builder: (context, state) => const CourtsMapPage(),
           ),
         ],
       ),

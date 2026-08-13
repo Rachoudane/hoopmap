@@ -1,38 +1,60 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/routes.dart';
+import '../nearby_courts_notifier.dart';
 
-class _CourtListItem {
-  const _CourtListItem({required this.id, required this.label});
-
-  final String id;
-  final String label;
+String _formatDistance(double meters) {
+  if (meters < 1000) {
+    return '${meters.round()} m';
+  }
+  final kilometers = (meters / 1000).toStringAsFixed(1).replaceAll('.', ',');
+  return '$kilometers km';
 }
 
-const List<_CourtListItem> _fakeCourts = [
-  _CourtListItem(id: 'court-a', label: 'Terrain A'),
-  _CourtListItem(id: 'court-b', label: 'Terrain B'),
-  _CourtListItem(id: 'court-c', label: 'Terrain C'),
-];
-
-class CourtsListPage extends StatelessWidget {
+class CourtsListPage extends ConsumerWidget {
   const CourtsListPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final courtsAsync = ref.watch(nearbyCourtsProvider);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Terrains')),
-      body: ListView.builder(
-        itemCount: _fakeCourts.length,
-        itemBuilder: (context, index) {
-          final court = _fakeCourts[index];
-          return ListTile(
-            title: Text(court.label),
-            onTap: () => context.goNamed(
-              Routes.courtDetailName,
-              pathParameters: {Routes.courtIdParam: court.id},
-            ),
+      appBar: AppBar(
+        title: const Text('Terrains'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.map),
+            onPressed: () => context.goNamed(Routes.mapName),
+          ),
+        ],
+      ),
+      body: courtsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stackTrace) =>
+            Center(child: Text('Erreur : ${error.runtimeType}')),
+        data: (courts) {
+          if (courts.isEmpty) {
+            return const Center(child: Text('Aucun terrain à proximité'));
+          }
+          return ListView.builder(
+            itemCount: courts.length,
+            itemBuilder: (context, index) {
+              final courtWithDistance = courts[index];
+              return ListTile(
+                title: Text(courtWithDistance.court.name),
+                subtitle: Text(
+                  _formatDistance(courtWithDistance.distanceInMeters),
+                ),
+                onTap: () => context.goNamed(
+                  Routes.courtDetailName,
+                  pathParameters: {
+                    Routes.courtIdParam: courtWithDistance.court.id,
+                  },
+                ),
+              );
+            },
           );
         },
       ),
