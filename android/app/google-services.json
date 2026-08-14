@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "789950842567",
+    "project_id": "hoopmap-mb-2026",
+    "storage_bucket": "hoopmap-mb-2026.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:789950842567:android:8fdaf83da5f54137c9a0e2",
+        "android_client_info": {
+          "package_name": "com.rachoucorp.hoopmap"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCjswBiMvYSPEq19nCrpYNzzvAV7H1On7s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
