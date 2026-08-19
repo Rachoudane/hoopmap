@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/courts/presentation/pages/add_court_page.dart';
 import '../../features/courts/presentation/pages/court_detail_page.dart';
 import '../../features/courts/presentation/pages/courts_list_page.dart';
 import '../../features/courts/presentation/pages/courts_map_page.dart';
@@ -30,6 +31,11 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((ref) {
             path: Routes.map,
             name: Routes.mapName,
             builder: (context, state) => const CourtsMapPage(),
+          ),
+          GoRoute(
+            path: Routes.addCourt,
+            name: Routes.addCourtName,
+            builder: (context, state) => const AddCourtPage(),
           ),
         ],
       ),

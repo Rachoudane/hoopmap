@@ -30,6 +30,10 @@ class CourtsListPage extends ConsumerWidget {
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => context.goNamed(Routes.addCourtName),
+        child: const Icon(Icons.add),
+      ),
       body: courtsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stackTrace) =>

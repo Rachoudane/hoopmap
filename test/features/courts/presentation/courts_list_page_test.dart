@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hoopmap/app.dart';
 import 'package:hoopmap/features/courts/domain/court.dart';
 import 'package:hoopmap/features/courts/domain/court_with_distance.dart';
+import 'package:hoopmap/features/courts/presentation/court_detail_provider.dart';
 import 'package:hoopmap/features/courts/presentation/nearby_courts_notifier.dart';
 import 'package:hoopmap/features/courts/presentation/pages/court_detail_page.dart';
 
@@ -42,6 +43,12 @@ void main() {
             nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
               yield courts;
             }),
+            // CourtDetailPage reads courtDetailProvider, which otherwise
+            // hits the real courtRepositoryProvider chain (http + Firestore)
+            // once the test taps through to it.
+            courtDetailProvider('court-a').overrideWith(
+              (ref) => Stream.value(_court('court-a', 'Terrain A')),
+            ),
           ],
           child: const HoopmapApp(),
         ),
