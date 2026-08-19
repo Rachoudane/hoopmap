@@ -18,20 +18,31 @@ Court courtFromSnapshot(DocumentSnapshot<Map<String, dynamic>> snapshot) {
   }
 
   final name = _requireField<String>(data, snapshot.id, 'name');
-  final location = _requireField<GeoPoint>(data, snapshot.id, 'location');
   final hoopCount = _requireField<int>(data, snapshot.id, 'hoopCount');
   final isOutdoor = _requireField<bool>(data, snapshot.id, 'isOutdoor');
   final createdAt = _requireField<Timestamp>(data, snapshot.id, 'createdAt');
+  final coordinates = _coordinatesOf(data, snapshot.id);
 
   return Court(
     id: snapshot.id,
     name: name,
-    latitude: location.latitude,
-    longitude: location.longitude,
+    latitude: coordinates.$1,
+    longitude: coordinates.$2,
     hoopCount: hoopCount,
     isOutdoor: isOutdoor,
     createdAt: createdAt.toDate(),
   );
+}
+
+(double, double) _coordinatesOf(Map<String, dynamic> data, String documentId) {
+  final lat = data['lat'];
+  final lng = data['lng'];
+  if (lat is num && lng is num) {
+    return (lat.toDouble(), lng.toDouble());
+  }
+
+  final location = _requireField<GeoPoint>(data, documentId, 'location');
+  return (location.latitude, location.longitude);
 }
 
 T _requireField<T>(Map<String, dynamic> data, String documentId, String key) {

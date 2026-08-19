@@ -8,6 +8,7 @@ import 'package:hoopmap/features/courts/data/court_repository_provider.dart';
 import 'package:hoopmap/features/courts/domain/court.dart';
 import 'package:hoopmap/features/courts/domain/court_repository.dart';
 import 'package:hoopmap/features/courts/domain/court_with_distance.dart';
+import 'package:hoopmap/features/courts/domain/geo_bounds.dart';
 import 'package:hoopmap/features/courts/presentation/nearby_courts_notifier.dart';
 
 class FakeLocationService implements LocationService {
@@ -31,7 +32,14 @@ class FakeCourtRepository implements CourtRepository {
   final StreamController<List<Court>> _controller;
 
   @override
-  Stream<List<Court>> watchCourts() => _controller.stream;
+  Stream<List<Court>> watchCourtsInBounds(GeoBounds bounds) =>
+      _controller.stream;
+
+  @override
+  Stream<Court> watchCourt(String id) => Stream.error(UnimplementedError());
+
+  @override
+  Future<String> addCourt(Court court) => throw UnimplementedError();
 }
 
 Court _court(String id, double latitude, double longitude) => Court(
