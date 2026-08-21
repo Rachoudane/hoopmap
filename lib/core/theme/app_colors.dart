@@ -6,9 +6,16 @@ import 'package:flutter/material.dart';
 /// colors from [Theme.of(context).colorScheme] (or [AppColors] only where a
 /// token has no `ColorScheme` slot) rather than hard-coding values.
 abstract final class AppColors {
-  static const Color ballOrange = Color(0xFFF2661A);
+  // Light-theme ballOrange/courtTeal/error are deliberately darker than
+  // their raw brand hues (#F2661A, #1FA6A0, #D6432E — still used as-is for
+  // the app icon/splash, which are graphics, not text): every text/
+  // background pairing that uses them (button labels, the distance label
+  // read as primary-colored text) is computed to reach at least 4.5:1
+  // against every light surface — see tool/check_contrast.py. The dark
+  // variants already cleared that bar unchanged.
+  static const Color ballOrange = Color(0xFFB74D14);
   static const Color ballOrangeLight = Color(0xFFFF8A47);
-  static const Color courtTeal = Color(0xFF1FA6A0);
+  static const Color courtTeal = Color(0xFF177A76);
   static const Color courtTealLight = Color(0xFF4BC9C3);
 
   static const Color asphalt = Color(0xFF14171B);
@@ -26,7 +33,7 @@ abstract final class AppColors {
   static const Color textLight = Color(0xFFF2F0EC);
   static const Color textLightSecondary = Color(0xFFA7ACB3);
 
-  static const Color error = Color(0xFFD6432E);
+  static const Color error = Color(0xFFC53E2A);
   static const Color errorDark = Color(0xFFFF6B57);
 
   static const ColorScheme light = ColorScheme(
