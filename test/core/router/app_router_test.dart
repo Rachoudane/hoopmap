@@ -155,6 +155,28 @@ void main() {
     expect(detailPage.courtId, 'abc123');
   });
 
+  testWidgets(
+    'resolves the hoopmap://courts/<id> deep link (host, not path) to '
+    'CourtDetailPage',
+    (tester) async {
+      // Android's <data android:scheme="hoopmap" android:host="courts"/>
+      // intent-filter delivers this as a URI with "courts" as the host,
+      // not as part of the path (see app_router.dart's redirect) — found
+      // by actually triggering the deep link on a device, where it fell
+      // through to NotFoundPage instead of CourtDetailPage.
+      final router = await _pumpRouterApp(tester);
+
+      router.go('hoopmap://courts/abc123');
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CourtDetailPage), findsOneWidget);
+      final detailPage = tester.widget<CourtDetailPage>(
+        find.byType(CourtDetailPage),
+      );
+      expect(detailPage.courtId, 'abc123');
+    },
+  );
+
   testWidgets('resolves an unknown URL to NotFoundPage', (tester) async {
     final router = await _pumpRouterApp(tester);
 

@@ -15,6 +15,17 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
     initialLocation: Routes.home,
     redirect: (context, state) {
+      // Android's <data android:scheme="hoopmap" android:host="courts"/>
+      // intent-filter delivers hoopmap://courts/<id> with "courts" as the
+      // URI *host*, not the path. go_router only ever matches against the
+      // path, so left as-is this never reaches Routes.courtDetail — it
+      // falls through to the error page. Rebuild the host into the path
+      // before matching. Once redirected, the new location has no scheme
+      // or host, so this doesn't loop.
+      if (state.uri.scheme == 'hoopmap' && state.uri.host.isNotEmpty) {
+        return '/${state.uri.host}${state.uri.path}';
+      }
+
       final onboardingCompleted = ref.read(onboardingCompletedProvider);
       final goingToOnboarding = state.matchedLocation == Routes.onboarding;
 
