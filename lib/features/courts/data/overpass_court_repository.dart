@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -24,6 +25,13 @@ class OverpassException implements Exception {
 
   @override
   String toString() => 'OverpassException: $message';
+}
+
+/// Thrown specifically for HTTP 429 responses, so callers can show a
+/// message distinct from a generic Overpass failure.
+class OverpassRateLimitedException implements Exception {
+  @override
+  String toString() => 'OverpassRateLimitedException';
 }
 
 class AreaTooLargeException implements Exception {
@@ -80,14 +88,28 @@ class OverpassCourtRepository implements CourtRepository {
   }
 
   Future<List<Court>> _fetchElements(String query) async {
-    final response = await _httpClient
-        .post(
-          _overpassEndpoint,
-          headers: const {'User-Agent': 'HoopMap/1.0'},
-          body: {'data': query},
-        )
-        .timeout(const Duration(seconds: 30));
+    final http.Response response;
+    try {
+      response = await _httpClient
+          .post(
+            _overpassEndpoint,
+            headers: const {'User-Agent': 'HoopMap/1.0'},
+            body: {'data': query},
+          )
+          .timeout(const Duration(seconds: 30));
+    } on TimeoutException {
+      throw OverpassException('Overpass did not respond in time.');
+    } catch (e) {
+      // Covers connectivity failures (SocketException, no network, DNS
+      // failure, ...): whatever the underlying platform exception is, it is
+      // normalized to OverpassException so callers never see a raw
+      // platform-specific type.
+      throw OverpassException('Could not reach Overpass: $e');
+    }
 
+    if (response.statusCode == 429) {
+      throw OverpassRateLimitedException();
+    }
     if (response.statusCode != 200) {
       throw OverpassException(
         'Overpass returned status code ${response.statusCode}.',

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoopmap/features/courts/data/overpass_court_repository.dart';
@@ -101,7 +102,32 @@ void main() {
 
     test('throws OverpassException on a non-200 status code', () async {
       final client = _FakeHttpClient(
+        (request) async => _response('server error', statusCode: 500),
+      );
+      final repository = OverpassCourtRepository(httpClient: client);
+
+      await expectLater(
+        repository.watchCourtsInBounds(bounds),
+        emitsError(isA<OverpassException>()),
+      );
+    });
+
+    test('throws OverpassRateLimitedException on a 429 status code', () async {
+      final client = _FakeHttpClient(
         (request) async => _response('rate limited', statusCode: 429),
+      );
+      final repository = OverpassCourtRepository(httpClient: client);
+
+      await expectLater(
+        repository.watchCourtsInBounds(bounds),
+        emitsError(isA<OverpassRateLimitedException>()),
+      );
+    });
+
+    test('throws OverpassException when the underlying request fails (no '
+        'network)', () async {
+      final client = _FakeHttpClient(
+        (request) async => throw const SocketException('Failed host lookup'),
       );
       final repository = OverpassCourtRepository(httpClient: client);
 
