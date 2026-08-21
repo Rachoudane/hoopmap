@@ -1,0 +1,39 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // User-contributed basketball courts (features/courts/data/firestore_court_repository.dart).
+    // Readable by anyone (the app itself only signs in anonymously), writable
+    // only by an authenticated caller creating a well-formed court; courts
+    // are never edited or removed once published.
+    match /courts/{courtId} {
+      allow read: if true;
+      allow create: if request.auth != null && isValidNewCourt(request.resource.data);
+      allow update, delete: if false;
+    }
+  }
+}
+
+function isValidNewCourt(data) {
+  return data.keys().hasAll(
+      ['name', 'hoopCount', 'isOutdoor', 'lat', 'lng', 'location', 'createdBy', 'createdAt']
+    )
+    && data.name is string
+    && data.name.size() >= 3
+    && data.name.size() <= 60
+    && data.hoopCount is int
+    && data.hoopCount >= 1
+    && data.hoopCount <= 20
+    && data.isOutdoor is bool
+    && data.lat is number
+    && data.lat >= -90
+    && data.lat <= 90
+    && data.lng is number
+    && data.lng >= -180
+    && data.lng <= 180
+    && data.location is latlng
+    && data.createdBy == request.auth.uid
+    // Firestore resolves FieldValue.serverTimestamp() to request.time before
+    // rules run, so this rejects any client-supplied createdAt value.
+    && data.createdAt == request.time;
+}
