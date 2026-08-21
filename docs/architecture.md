@@ -10,7 +10,20 @@ Le code de la feature `courts` (`lib/features/courts/`) est organisé en trois c
 - **`data/`** : les implémentations concrètes de `CourtRepository` — `OverpassCourtRepository` (HTTP vers l'API Overpass), `FirestoreCourtRepository` (Firestore), `CompositeCourtRepository` (combine les deux) — ainsi que leurs mappers (`overpass_mapper.dart`, `court_mapper.dart`) et le câblage Riverpod (`court_repository_provider.dart`).
 - **`presentation/`** : les notifiers/providers Riverpod qui exposent l'état à l'UI (`NearbyCourtsNotifier`, `courtDetailProvider`, `AddCourtController`) et les pages (`pages/`).
 
-`lib/core/` regroupe les préoccupations transverses utilisées par plusieurs features : l'authentification (`core/auth/auth_providers.dart`), l'accès à Firebase (`core/firebase/firebase_providers.dart`), la géolocalisation (`core/location/`, avec l'interface `LocationService` et son implémentation `GeolocatorLocationService`), le routeur (`core/router/`) et le thème.
+`lib/core/` regroupe les préoccupations transverses utilisées par plusieurs features : l'authentification (`core/auth/auth_providers.dart`), l'accès à Firebase (`core/firebase/firebase_providers.dart`), la géolocalisation (`core/location/`, avec l'interface `LocationService` et son implémentation `GeolocatorLocationService`), le routeur (`core/router/`), l'onboarding (`core/onboarding/`) et le système de design (`core/theme/`).
+
+## Navigation
+
+Le routeur (`core/router/app_router.dart`) a deux particularités :
+
+- **Portail d'onboarding** : sa fonction `redirect` lit `onboardingCompletedProvider` (synchrone, adossé à `shared_preferences`) et renvoie systématiquement vers `/onboarding` tant qu'il n'a pas été complété, quelle que soit la route demandée.
+- **Navigation par onglets** : Liste et Carte sont les deux branches d'un `StatefulShellRoute.indexedStack` (chacune garde sa pile de navigation et sa position de défilement en changeant d'onglet), affichées dans `AppShell` avec une `NavigationBar`. La fiche terrain et le formulaire d'ajout sont des routes de haut niveau, ouvertes par `push` (jamais `go`) pour toujours laisser un onglet sous-jacent dans la pile.
+
+Comme une fiche terrain peut aussi être ouverte directement par un deep link à froid (sans pile de navigation existante), `core/router/back_to_home_scope.dart` intercepte le retour (bouton ou geste système) via `PopScope` : s'il y a quelque chose à dépiler, il dépile normalement ; sinon, il navigue explicitement vers l'accueil.
+
+## Gestion des erreurs
+
+Aucune page n'affiche un type d'exception brut. `features/courts/presentation/court_error_messages.dart` traduit chaque exception métier (échec Overpass, limitation de débit 429, permission ou service de localisation refusé/désactivé, terrain introuvable) en un message français actionnable, affiché par `AppErrorView`/`AppEmptyView` (`core/presentation/widgets/`) avec un bouton Réessayer qui invalide le provider concerné.
 
 ## Le pattern repository et le repository composite
 
@@ -39,6 +52,7 @@ Aucun test du projet n'effectue d'appel réseau ou d'appel Firebase réel :
 - **`CompositeCourtRepository`**, **`NearbyCourtsNotifier`**, **`courtDetailProvider`** et **`AddCourtController`** sont testés avec de faux `CourtRepository` (et, pour la géolocalisation, un faux `LocationService`) écrits à la main dans chaque fichier de test.
 - **`FirestoreCourtRepository`** est testé avec `FakeFirebaseFirestore`, du package `fake_cloud_firestore` : une implémentation en mémoire de `cloud_firestore`, pas une instance réelle.
 - **`FirebaseAuth`** n'est jamais invoqué réellement dans les tests : `anonymousSessionProvider` est surchargé au niveau du `ProviderContainer`, et `FirestoreCourtRepository` accepte un paramètre optionnel `currentUserId` pour injecter l'identifiant utilisateur sans passer par `FirebaseAuth.instance`.
+- **`SharedPreferences`** utilise `SharedPreferences.setMockInitialValues(...)` (une implémentation en mémoire fournie par le package) avant `sharedPreferencesProvider.overrideWithValue(...)`, jamais le stockage réel de l'appareil.
 
 ## Limites connues
 
