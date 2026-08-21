@@ -61,7 +61,7 @@ class _CourtDetailBody extends StatelessWidget {
     final isFromOpenStreetMap = court.id.startsWith('osm:');
     final source = isFromOpenStreetMap
         ? 'OpenStreetMap'
-        : "Ajouté par un utilisateur de hoopmap";
+        : "Ajouté par un utilisateur de Hoopmap";
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.xl),

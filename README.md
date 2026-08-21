@@ -1,4 +1,4 @@
-# hoopmap
+# Hoopmap
 
 Application Flutter qui aide à trouver des terrains de basket où que l'on soit dans le monde, en combinant les données OpenStreetMap et les terrains ajoutés par les utilisateurs.
 

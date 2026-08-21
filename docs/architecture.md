@@ -1,6 +1,6 @@
 # Architecture
 
-Ce document décrit l'organisation du code de hoopmap telle qu'elle existe aujourd'hui, la raison d'être de ses principales abstractions, la stratégie de test, et les limites connues du projet.
+Ce document décrit l'organisation du code de Hoopmap telle qu'elle existe aujourd'hui, la raison d'être de ses principales abstractions, la stratégie de test, et les limites connues du projet.
 
 ## Couches et règle de dépendance
 

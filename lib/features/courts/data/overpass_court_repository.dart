@@ -93,7 +93,7 @@ class OverpassCourtRepository implements CourtRepository {
       response = await _httpClient
           .post(
             _overpassEndpoint,
-            headers: const {'User-Agent': 'HoopMap/1.0'},
+            headers: const {'User-Agent': 'Hoopmap/1.0'},
             body: {'data': query},
           )
           .timeout(const Duration(seconds: 30));

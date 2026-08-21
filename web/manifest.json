@@ -1,6 +1,6 @@
 {
-    "name": "hoopmap",
-    "short_name": "hoopmap",
+    "name": "Hoopmap",
+    "short_name": "Hoopmap",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

@@ -23,7 +23,7 @@ const List<_OnboardingSlide> _slides = [
     icon: Icons.sports_basketball,
     title: 'Trouvez un terrain, où que vous soyez',
     description:
-        "hoopmap repère les terrains de basket autour de vous et les "
+        "Hoopmap repère les terrains de basket autour de vous et les "
         'affiche en liste ou sur une carte, triés par distance.',
   ),
   _OnboardingSlide(
@@ -31,7 +31,7 @@ const List<_OnboardingSlide> _slides = [
     title: 'Des données ouvertes et communautaires',
     description:
         "Les terrains viennent d'OpenStreetMap, complétés par les "
-        "contributions d'autres utilisateurs de hoopmap qui ajoutent les "
+        "contributions d'autres utilisateurs de Hoopmap qui ajoutent les "
         'terrains manquants.',
   ),
   _OnboardingSlide(
