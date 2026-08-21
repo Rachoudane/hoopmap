@@ -5,39 +5,69 @@ import '../../features/courts/presentation/pages/add_court_page.dart';
 import '../../features/courts/presentation/pages/court_detail_page.dart';
 import '../../features/courts/presentation/pages/courts_list_page.dart';
 import '../../features/courts/presentation/pages/courts_map_page.dart';
+import '../onboarding/onboarding_providers.dart';
+import '../onboarding/pages/onboarding_page.dart';
+import '../presentation/pages/app_shell.dart';
 import '../presentation/pages/not_found_page.dart';
 import 'routes.dart';
 
 final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
     initialLocation: Routes.home,
+    redirect: (context, state) {
+      final onboardingCompleted = ref.read(onboardingCompletedProvider);
+      final goingToOnboarding = state.matchedLocation == Routes.onboarding;
+
+      if (!onboardingCompleted && !goingToOnboarding) {
+        return Routes.onboarding;
+      }
+      if (onboardingCompleted && goingToOnboarding) {
+        return Routes.home;
+      }
+      return null;
+    },
     routes: [
       GoRoute(
-        path: Routes.home,
-        name: Routes.homeName,
-        builder: (context, state) => const CourtsListPage(),
-        routes: [
-          GoRoute(
-            path: Routes.courtDetail,
-            name: Routes.courtDetailName,
-            builder: (context, state) {
-              // Only matched when the courtIdParam segment is present in the
-              // path, so it is always non-null here.
-              final courtId = state.pathParameters[Routes.courtIdParam]!;
-              return CourtDetailPage(courtId: courtId);
-            },
+        path: Routes.onboarding,
+        name: Routes.onboardingName,
+        builder: (context, state) => const OnboardingPage(),
+      ),
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) =>
+            AppShell(navigationShell: navigationShell),
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: Routes.home,
+                name: Routes.homeName,
+                builder: (context, state) => const CourtsListPage(),
+              ),
+            ],
           ),
-          GoRoute(
-            path: Routes.map,
-            name: Routes.mapName,
-            builder: (context, state) => const CourtsMapPage(),
-          ),
-          GoRoute(
-            path: Routes.addCourt,
-            name: Routes.addCourtName,
-            builder: (context, state) => const AddCourtPage(),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: Routes.map,
+                name: Routes.mapName,
+                builder: (context, state) => const CourtsMapPage(),
+              ),
+            ],
           ),
         ],
+      ),
+      GoRoute(
+        path: Routes.courtDetail,
+        name: Routes.courtDetailName,
+        builder: (context, state) {
+          final courtId = state.pathParameters[Routes.courtIdParam]!;
+          return CourtDetailPage(courtId: courtId);
+        },
+      ),
+      GoRoute(
+        path: Routes.addCourt,
+        name: Routes.addCourtName,
+        builder: (context, state) => const AddCourtPage(),
       ),
     ],
     errorBuilder: (context, state) => const NotFoundPage(),

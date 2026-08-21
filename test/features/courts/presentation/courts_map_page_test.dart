@@ -6,6 +6,7 @@ import 'package:hoopmap/features/courts/domain/court.dart';
 import 'package:hoopmap/features/courts/domain/court_with_distance.dart';
 import 'package:hoopmap/features/courts/presentation/nearby_courts_notifier.dart';
 import 'package:hoopmap/features/courts/presentation/pages/courts_map_page.dart';
+import 'package:hoopmap/features/courts/presentation/widgets/court_marker.dart';
 
 Court _court(String id, String name) => Court(
   id: id,
@@ -52,5 +53,82 @@ void main() {
 
     final markerLayer = tester.widget<MarkerLayer>(find.byType(MarkerLayer));
     expect(markerLayer.markers, hasLength(3));
+  });
+
+  testWidgets('tapping a marker opens a preview card for that court', (
+    tester,
+  ) async {
+    final courts = [
+      CourtWithDistance(
+        court: _court('court-a', 'Terrain A'),
+        distanceInMeters: 450,
+      ),
+    ];
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
+            yield courts;
+          }),
+        ],
+        child: const MaterialApp(home: CourtsMapPage()),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Terrain A'), findsNothing);
+
+    await tester.tap(find.byType(CourtMarker));
+    await tester.pump();
+
+    expect(find.text('Terrain A'), findsOneWidget);
+    expect(find.text('450 m'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.close));
+    await tester.pump();
+
+    expect(find.text('Terrain A'), findsNothing);
+  });
+
+  testWidgets('shows an illustrated empty state when there are no courts', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
+            yield const [];
+          }),
+        ],
+        child: const MaterialApp(home: CourtsMapPage()),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Aucun terrain à proximité'), findsOneWidget);
+    expect(find.byType(FlutterMap), findsNothing);
+  });
+
+  testWidgets('shows a human-readable error with a working retry button', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
+            throw Exception('boom');
+          }),
+        ],
+        child: const MaterialApp(home: CourtsMapPage()),
+      ),
+    );
+    await tester.pump();
+
+    expect(
+      find.text('Une erreur inattendue est survenue. Réessayez.'),
+      findsOneWidget,
+    );
+    expect(find.text('Réessayer'), findsOneWidget);
   });
 }

@@ -29,4 +29,20 @@ void main() {
       expect(a, b);
     });
   });
+
+  group('formatDistanceLabel', () {
+    test('rounds sub-kilometer distances to whole meters', () {
+      expect(formatDistanceLabel(450), '450 m');
+      expect(formatDistanceLabel(999.6), '1000 m');
+    });
+
+    test('formats kilometer distances with a comma decimal', () {
+      expect(formatDistanceLabel(1200), '1,2 km');
+      expect(formatDistanceLabel(2400), '2,4 km');
+    });
+
+    test('the 1000 m boundary is formatted in kilometers', () {
+      expect(formatDistanceLabel(1000), '1,0 km');
+    });
+  });
 }

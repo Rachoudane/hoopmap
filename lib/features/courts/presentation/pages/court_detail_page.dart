@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../../core/presentation/widgets/app_message_view.dart';
+import '../../../../core/router/back_to_home_scope.dart';
+import '../../../../core/router/routes.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../domain/court.dart';
+import '../../domain/court_repository.dart';
 import '../court_detail_provider.dart';
+import '../court_error_messages.dart';
+import '../widgets/court_pill.dart';
 
 class CourtDetailPage extends ConsumerWidget {
   const CourtDetailPage({super.key, required this.courtId});
@@ -14,13 +22,28 @@ class CourtDetailPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final courtAsync = ref.watch(courtDetailProvider(courtId));
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Détail du terrain')),
-      body: courtAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) =>
-            Center(child: Text('Erreur : ${error.runtimeType}')),
-        data: (court) => _CourtDetailBody(court: court),
+    return BackToHomeScope(
+      child: Scaffold(
+        appBar: AppBar(title: const Text('Détail du terrain')),
+        body: courtAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stackTrace) {
+            if (error is CourtNotFoundException) {
+              return AppEmptyView(
+                icon: Icons.search_off,
+                title: 'Terrain introuvable',
+                message: courtErrorMessage(error),
+                actionLabel: 'Retour à la liste',
+                onAction: () => context.go(Routes.home),
+              );
+            }
+            return AppErrorView(
+              message: courtErrorMessage(error),
+              onRetry: () => ref.invalidate(courtDetailProvider(courtId)),
+            );
+          },
+          data: (court) => _CourtDetailBody(court: court),
+        ),
       ),
     );
   }
@@ -33,36 +56,96 @@ class _CourtDetailBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
     final isFromOpenStreetMap = court.id.startsWith('osm:');
     final source = isFromOpenStreetMap
-        ? 'Source : OpenStreetMap'
-        : "Source : contribution d'utilisateur";
+        ? 'OpenStreetMap'
+        : "Ajouté par un utilisateur de hoopmap";
 
-    return Padding(
-      padding: const EdgeInsets.all(16),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppSpacing.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(court.name, style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 8),
-          Text('${court.hoopCount} panier(s)'),
-          Text(court.isOutdoor ? 'Terrain extérieur' : 'Terrain intérieur'),
-          Text(
-            '${court.latitude.toStringAsFixed(5)}, '
-            '${court.longitude.toStringAsFixed(5)}',
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withValues(alpha: 0.14),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.sports_basketball,
+              size: 36,
+              color: colorScheme.primary,
+            ),
           ),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: () => _openDirections(court),
-            icon: const Icon(Icons.directions),
-            label: const Text('Itinéraire'),
+          const SizedBox(height: AppSpacing.lg),
+          Text(court.name, style: textTheme.displaySmall),
+          const SizedBox(height: AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: [
+              CourtPill(
+                icon: court.isOutdoor
+                    ? Icons.wb_sunny_outlined
+                    : Icons.home_work_outlined,
+                label: court.isOutdoor
+                    ? 'Terrain extérieur'
+                    : 'Terrain intérieur',
+              ),
+              CourtPill(
+                icon: Icons.sports_basketball_outlined,
+                label:
+                    '${court.hoopCount} '
+                    '${court.hoopCount > 1 ? 'paniers' : 'panier'}',
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            source,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: Colors.grey),
+          const SizedBox(height: AppSpacing.xl),
+          Divider(color: colorScheme.outlineVariant),
+          const SizedBox(height: AppSpacing.lg),
+          Row(
+            children: [
+              Icon(
+                Icons.place_outlined,
+                size: 20,
+                color: colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                '${court.latitude.toStringAsFixed(5)}, '
+                '${court.longitude.toStringAsFixed(5)}',
+                style: textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _openDirections(court),
+              icon: const Icon(Icons.directions),
+              label: const Text('Itinéraire'),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                size: 16,
+                color: colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Expanded(
+                child: Text('Source : $source', style: textTheme.bodySmall),
+              ),
+            ],
           ),
         ],
       ),

@@ -20,3 +20,13 @@ double distanceInMetersBetween(
 
   return _earthRadiusInMeters * c;
 }
+
+/// Formats a distance for display: meters below 1 km, kilometers with one
+/// decimal (comma-separated, French locale) above.
+String formatDistanceLabel(double meters) {
+  if (meters < 1000) {
+    return '${meters.round()} m';
+  }
+  final kilometers = (meters / 1000).toStringAsFixed(1).replaceAll('.', ',');
+  return '$kilometers km';
+}

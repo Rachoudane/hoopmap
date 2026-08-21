@@ -37,21 +37,23 @@ class _FakeCourtRepository implements CourtRepository {
 
 // AddCourtPage calls context.pop() and shows a SnackBar on success, so it is
 // pumped as a real sub-route of home rather than in isolation.
+// Reached in the real app only via a push from the FAB on CourtsListPage
+// (see courts_list_page.dart), never as the initial location: pushing here
+// too keeps a valid pop target on the stack, matching _submit()'s
+// unconditional context.pop() on success.
 Future<_FakeCourtRepository> _pumpAddCourtPage(WidgetTester tester) async {
   final repository = _FakeCourtRepository();
   final router = GoRouter(
-    initialLocation: '/${Routes.addCourt}',
+    initialLocation: Routes.home,
     routes: [
       GoRoute(
         path: Routes.home,
         builder: (context, state) =>
             const Scaffold(body: Center(child: Text('Home'))),
-        routes: [
-          GoRoute(
-            path: Routes.addCourt,
-            builder: (context, state) => const AddCourtPage(),
-          ),
-        ],
+      ),
+      GoRoute(
+        path: Routes.addCourt,
+        builder: (context, state) => const AddCourtPage(),
       ),
     ],
   );
@@ -67,6 +69,7 @@ Future<_FakeCourtRepository> _pumpAddCourtPage(WidgetTester tester) async {
       child: MaterialApp.router(routerConfig: router),
     ),
   );
+  router.push(Routes.addCourt);
   await tester.pumpAndSettle();
 
   return repository;
@@ -84,7 +87,7 @@ void main() {
       await tester.enterText(find.byType(TextFormField).at(2), '48.8566');
       await tester.enterText(find.byType(TextFormField).at(3), '2.3522');
 
-      await tester.tap(find.text('Ajouter'));
+      await tester.tap(find.text('Ajouter le terrain'));
       await tester.pumpAndSettle();
 
       expect(
@@ -103,7 +106,7 @@ void main() {
     await tester.enterText(find.byType(TextFormField).at(2), '48.8566');
     await tester.enterText(find.byType(TextFormField).at(3), '2.3522');
 
-    await tester.tap(find.text('Ajouter'));
+    await tester.tap(find.text('Ajouter le terrain'));
     await tester.pumpAndSettle();
 
     expect(repository.addCourtCallCount, 1);

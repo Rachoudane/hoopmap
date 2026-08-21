@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hoopmap/core/onboarding/onboarding_providers.dart';
+import 'package:hoopmap/core/onboarding/pages/onboarding_page.dart';
 import 'package:hoopmap/core/presentation/pages/not_found_page.dart';
 import 'package:hoopmap/core/router/app_router.dart';
 import 'package:hoopmap/core/router/routes.dart';
@@ -12,6 +14,7 @@ import 'package:hoopmap/features/courts/presentation/nearby_courts_notifier.dart
 import 'package:hoopmap/features/courts/presentation/pages/court_detail_page.dart';
 import 'package:hoopmap/features/courts/presentation/pages/courts_list_page.dart';
 import 'package:hoopmap/features/courts/presentation/pages/courts_map_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 final List<CourtWithDistance> _fixedCourts = [
   CourtWithDistance(
@@ -41,9 +44,23 @@ Court _fakeCourtDetail(String id) => Court(
   createdAt: DateTime(2026, 1, 1),
 );
 
-Future<GoRouter> _pumpRouterApp(WidgetTester tester) async {
+Future<SharedPreferences> _onboardingCompletedPrefs() async {
+  SharedPreferences.setMockInitialValues({'onboarding_completed': true});
+  return SharedPreferences.getInstance();
+}
+
+Future<GoRouter> _pumpRouterApp(
+  WidgetTester tester, {
+  bool onboardingCompleted = true,
+}) async {
+  SharedPreferences.setMockInitialValues({
+    'onboarding_completed': onboardingCompleted,
+  });
+  final sharedPreferences = await SharedPreferences.getInstance();
+
   final container = ProviderContainer(
     overrides: [
+      sharedPreferencesProvider.overrideWithValue(sharedPreferences),
       nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
         yield _fixedCourts;
       }),
@@ -61,13 +78,15 @@ Future<GoRouter> _pumpRouterApp(WidgetTester tester) async {
       child: MaterialApp.router(routerConfig: router),
     ),
   );
+  await tester.pumpAndSettle();
 
   return router;
 }
 
 // app_router.dart hardcodes initialLocation to Routes.home, so a cold start
-// at a deep-linked location is exercised here by building an equivalent
-// router directly with a custom initialLocation.
+// at a deep-linked location is exercised here by building an equivalent,
+// simplified router directly with a custom initialLocation (home and court
+// detail are both top-level routes in the real router too).
 Future<GoRouter> _pumpRouterAppAt(
   WidgetTester tester,
   String initialLocation,
@@ -91,21 +110,19 @@ Future<GoRouter> _pumpRouterAppAt(
         path: Routes.home,
         name: Routes.homeName,
         builder: (context, state) => const CourtsListPage(),
-        routes: [
-          GoRoute(
-            path: Routes.courtDetail,
-            name: Routes.courtDetailName,
-            builder: (context, state) {
-              final courtId = state.pathParameters[Routes.courtIdParam]!;
-              return CourtDetailPage(courtId: courtId);
-            },
-          ),
-          GoRoute(
-            path: Routes.map,
-            name: Routes.mapName,
-            builder: (context, state) => const CourtsMapPage(),
-          ),
-        ],
+      ),
+      GoRoute(
+        path: Routes.map,
+        name: Routes.mapName,
+        builder: (context, state) => const CourtsMapPage(),
+      ),
+      GoRoute(
+        path: Routes.courtDetail,
+        name: Routes.courtDetailName,
+        builder: (context, state) {
+          final courtId = state.pathParameters[Routes.courtIdParam]!;
+          return CourtDetailPage(courtId: courtId);
+        },
       ),
     ],
     errorBuilder: (context, state) => const NotFoundPage(),
@@ -118,6 +135,7 @@ Future<GoRouter> _pumpRouterAppAt(
       child: MaterialApp.router(routerConfig: router),
     ),
   );
+  await tester.pumpAndSettle();
 
   return router;
 }
@@ -151,7 +169,9 @@ void main() {
   ) async {
     final router = await _pumpRouterApp(tester);
 
-    router.go('/courts/abc123');
+    // The app always reaches court detail via push (see CourtCard's onTap),
+    // never go(), so a valid pop target (the list) stays on the stack.
+    router.push('/courts/abc123');
     await tester.pumpAndSettle();
     expect(find.byType(CourtDetailPage), findsOneWidget);
 
@@ -161,11 +181,30 @@ void main() {
     expect(find.byType(CourtsListPage), findsOneWidget);
   });
 
+  testWidgets('the bottom navigation switches between Liste and Carte', (
+    tester,
+  ) async {
+    await _pumpRouterApp(tester);
+
+    expect(find.byType(CourtsListPage), findsOneWidget);
+    expect(find.byType(CourtsMapPage), findsNothing);
+
+    await tester.tap(find.text('Carte'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CourtsMapPage), findsOneWidget);
+
+    await tester.tap(find.text('Liste'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CourtsListPage), findsOneWidget);
+  });
+
   testWidgets(
     'a cold start at a court detail deep link shows CourtDetailPage, and '
-    'popping returns to CourtsListPage',
+    'the back gesture (with no push history) falls back to CourtsListPage',
     (tester) async {
-      final router = await _pumpRouterAppAt(tester, '/courts/osm:way-1');
+      await _pumpRouterAppAt(tester, '/courts/osm:way-1');
 
       expect(find.byType(CourtDetailPage), findsOneWidget);
       final detailPage = tester.widget<CourtDetailPage>(
@@ -173,10 +212,58 @@ void main() {
       );
       expect(detailPage.courtId, 'osm:way-1');
 
-      router.pop();
+      // A cold deep link has no push history, so GoRouter.pop() would throw;
+      // BackToHomeScope handles this by intercepting the system/back-gesture
+      // pop attempt (simulated here via Navigator.maybePop) and going home.
+      final context = tester.element(find.byType(CourtDetailPage));
+      await Navigator.maybePop(context);
       await tester.pumpAndSettle();
 
       expect(find.byType(CourtsListPage), findsOneWidget);
     },
   );
+
+  group('onboarding gate', () {
+    testWidgets(
+      'redirects to OnboardingPage when onboarding has not been completed',
+      (tester) async {
+        await _pumpRouterApp(tester, onboardingCompleted: false);
+
+        expect(find.byType(OnboardingPage), findsOneWidget);
+        expect(find.byType(CourtsListPage), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'redirects away from OnboardingPage once it has been completed',
+      (tester) async {
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(
+              await _onboardingCompletedPrefs(),
+            ),
+            nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
+              yield _fixedCourts;
+            }),
+          ],
+        );
+        addTearDown(container.dispose);
+        final router = container.read(goRouterProvider);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp.router(routerConfig: router),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        router.go(Routes.onboarding);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(OnboardingPage), findsNothing);
+        expect(find.byType(CourtsListPage), findsOneWidget);
+      },
+    );
+  });
 }

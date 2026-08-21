@@ -1,11 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoopmap/app.dart';
+import 'package:hoopmap/core/onboarding/onboarding_providers.dart';
 import 'package:hoopmap/features/courts/domain/court.dart';
 import 'package:hoopmap/features/courts/domain/court_with_distance.dart';
 import 'package:hoopmap/features/courts/presentation/court_detail_provider.dart';
 import 'package:hoopmap/features/courts/presentation/nearby_courts_notifier.dart';
 import 'package:hoopmap/features/courts/presentation/pages/court_detail_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 Court _court(String id, String name) => Court(
   id: id,
@@ -37,9 +39,13 @@ void main() {
         ),
       ];
 
+      SharedPreferences.setMockInitialValues({'onboarding_completed': true});
+      final sharedPreferences = await SharedPreferences.getInstance();
+
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
             nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
               yield courts;
             }),

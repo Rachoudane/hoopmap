@@ -2,16 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/presentation/widgets/app_message_view.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/router/routes.dart';
+import '../court_error_messages.dart';
 import '../nearby_courts_notifier.dart';
-
-String _formatDistance(double meters) {
-  if (meters < 1000) {
-    return '${meters.round()} m';
-  }
-  final kilometers = (meters / 1000).toStringAsFixed(1).replaceAll('.', ',');
-  return '$kilometers km';
-}
+import '../widgets/court_card.dart';
+import '../widgets/court_list_skeleton.dart';
 
 class CourtsListPage extends ConsumerWidget {
   const CourtsListPage({super.key});
@@ -21,44 +18,55 @@ class CourtsListPage extends ConsumerWidget {
     final courtsAsync = ref.watch(nearbyCourtsProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Terrains'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.map),
-            onPressed: () => context.goNamed(Routes.mapName),
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('Terrains à proximité')),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => context.goNamed(Routes.addCourtName),
+        onPressed: () => context.pushNamed(Routes.addCourtName),
+        tooltip: 'Ajouter un terrain',
         child: const Icon(Icons.add),
       ),
       body: courtsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) =>
-            Center(child: Text('Erreur : ${error.runtimeType}')),
+        loading: () => const CourtListSkeleton(),
+        error: (error, stackTrace) => AppErrorView(
+          message: courtErrorMessage(error),
+          onRetry: () => ref.invalidate(nearbyCourtsProvider),
+        ),
         data: (courts) {
           if (courts.isEmpty) {
-            return const Center(child: Text('Aucun terrain à proximité'));
+            return AppEmptyView(
+              icon: Icons.sports_basketball_outlined,
+              title: 'Aucun terrain à proximité',
+              message:
+                  "Aucun terrain n'a été trouvé dans un rayon de 5 km. "
+                  'Vous pouvez en ajouter un vous-même.',
+              actionLabel: 'Actualiser',
+              onAction: () => ref.invalidate(nearbyCourtsProvider),
+            );
           }
-          return ListView.builder(
-            itemCount: courts.length,
-            itemBuilder: (context, index) {
-              final courtWithDistance = courts[index];
-              return ListTile(
-                title: Text(courtWithDistance.court.name),
-                subtitle: Text(
-                  _formatDistance(courtWithDistance.distanceInMeters),
-                ),
-                onTap: () => context.goNamed(
-                  Routes.courtDetailName,
-                  pathParameters: {
-                    Routes.courtIdParam: courtWithDistance.court.id,
-                  },
-                ),
-              );
-            },
+          return RefreshIndicator(
+            onRefresh: () async => ref.invalidate(nearbyCourtsProvider),
+            child: ListView.separated(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.lg,
+                AppSpacing.lg,
+                AppSpacing.xxxl,
+              ),
+              itemCount: courts.length,
+              separatorBuilder: (context, index) =>
+                  const SizedBox(height: AppSpacing.md),
+              itemBuilder: (context, index) {
+                final courtWithDistance = courts[index];
+                return CourtCard(
+                  courtWithDistance: courtWithDistance,
+                  onTap: () => context.pushNamed(
+                    Routes.courtDetailName,
+                    pathParameters: {
+                      Routes.courtIdParam: courtWithDistance.court.id,
+                    },
+                  ),
+                );
+              },
+            ),
           );
         },
       ),

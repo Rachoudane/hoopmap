@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../router/routes.dart';
+import '../../theme/app_spacing.dart';
+import '../widgets/app_message_view.dart';
 
 class NotFoundPage extends StatelessWidget {
   const NotFoundPage({super.key});
@@ -10,17 +12,14 @@ class NotFoundPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Page introuvable')),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text('Cette page n\'existe pas.'),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => context.go(Routes.home),
-              child: const Text('Retour à l\'accueil'),
-            ),
-          ],
+      body: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: AppEmptyView(
+          icon: Icons.signpost_outlined,
+          title: 'Page introuvable',
+          message: "Cette page n'existe pas ou plus.",
+          actionLabel: "Retour à l'accueil",
+          onAction: () => context.go(Routes.home),
         ),
       ),
     );

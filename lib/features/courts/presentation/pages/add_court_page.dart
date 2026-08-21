@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/location/location_providers.dart';
+import '../../../../core/router/back_to_home_scope.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../add_court_controller.dart';
+import '../court_error_messages.dart';
 
 class AddCourtPage extends ConsumerStatefulWidget {
   const AddCourtPage({super.key});
@@ -78,91 +81,151 @@ class _AddCourtPageState extends ConsumerState<AddCourtPage> {
   Widget build(BuildContext context) {
     final submitState = ref.watch(addCourtControllerProvider);
     final isSubmitting = submitState.isLoading;
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Ajouter un terrain')),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            TextFormField(
-              controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Nom'),
-              validator: (value) {
-                final length = value?.trim().length ?? 0;
-                if (length < 3 || length > 60) {
-                  return 'Le nom doit contenir entre 3 et 60 caractères';
-                }
-                return null;
-              },
-            ),
-            TextFormField(
-              controller: _hoopCountController,
-              decoration: const InputDecoration(labelText: 'Nombre de paniers'),
-              keyboardType: TextInputType.number,
-              validator: (value) {
-                final parsed = int.tryParse(value?.trim() ?? '');
-                if (parsed == null || parsed < 1 || parsed > 20) {
-                  return 'Entre 1 et 20 paniers';
-                }
-                return null;
-              },
-            ),
-            SwitchListTile(
-              title: const Text('Terrain extérieur'),
-              value: _isOutdoor,
-              onChanged: (value) => setState(() => _isOutdoor = value),
-            ),
-            TextFormField(
-              controller: _latitudeController,
-              decoration: const InputDecoration(labelText: 'Latitude'),
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-                signed: true,
+    return BackToHomeScope(
+      child: Scaffold(
+        appBar: AppBar(title: const Text('Ajouter un terrain')),
+        body: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            children: [
+              Text('Informations', style: textTheme.titleMedium),
+              const SizedBox(height: AppSpacing.md),
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Nom du terrain',
+                  hintText: 'Ex. City Stade Voltaire',
+                ),
+                textCapitalization: TextCapitalization.sentences,
+                validator: (value) {
+                  final length = value?.trim().length ?? 0;
+                  if (length < 3 || length > 60) {
+                    return 'Le nom doit contenir entre 3 et 60 caractères';
+                  }
+                  return null;
+                },
               ),
-              validator: (value) {
-                final parsed = double.tryParse(value?.trim() ?? '');
-                if (parsed == null || parsed < -90 || parsed > 90) {
-                  return 'Latitude entre -90 et 90';
-                }
-                return null;
-              },
-            ),
-            TextFormField(
-              controller: _longitudeController,
-              decoration: const InputDecoration(labelText: 'Longitude'),
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-                signed: true,
+              const SizedBox(height: AppSpacing.lg),
+              TextFormField(
+                controller: _hoopCountController,
+                decoration: const InputDecoration(
+                  labelText: 'Nombre de paniers',
+                ),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  final parsed = int.tryParse(value?.trim() ?? '');
+                  if (parsed == null || parsed < 1 || parsed > 20) {
+                    return 'Entre 1 et 20 paniers';
+                  }
+                  return null;
+                },
               ),
-              validator: (value) {
-                final parsed = double.tryParse(value?.trim() ?? '');
-                if (parsed == null || parsed < -180 || parsed > 180) {
-                  return 'Longitude entre -180 et 180';
-                }
-                return null;
-              },
-            ),
-            if (submitState.hasError) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
+              Card(
+                child: SwitchListTile(
+                  title: const Text('Terrain extérieur'),
+                  subtitle: Text(
+                    _isOutdoor
+                        ? 'Le terrain est en extérieur'
+                        : 'Le terrain est en intérieur',
+                    style: textTheme.bodySmall,
+                  ),
+                  value: _isOutdoor,
+                  onChanged: (value) => setState(() => _isOutdoor = value),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              Text('Position', style: textTheme.titleMedium),
+              const SizedBox(height: AppSpacing.xs),
               Text(
-                'Erreur : ${submitState.error}',
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
+                'Pré-remplie avec votre position actuelle si disponible ; '
+                'vous pouvez la corriger.',
+                style: textTheme.bodySmall,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _latitudeController,
+                      decoration: const InputDecoration(labelText: 'Latitude'),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                        signed: true,
+                      ),
+                      validator: (value) {
+                        final parsed = double.tryParse(value?.trim() ?? '');
+                        if (parsed == null || parsed < -90 || parsed > 90) {
+                          return 'Entre -90 et 90';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _longitudeController,
+                      decoration: const InputDecoration(labelText: 'Longitude'),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                        signed: true,
+                      ),
+                      validator: (value) {
+                        final parsed = double.tryParse(value?.trim() ?? '');
+                        if (parsed == null || parsed < -180 || parsed > 180) {
+                          return 'Entre -180 et 180';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              if (submitState.hasError) ...[
+                const SizedBox(height: AppSpacing.lg),
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: colorScheme.error.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.error_outline, color: colorScheme.error),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          courtErrorMessage(submitState.error!),
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.error,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: AppSpacing.xl),
+              ElevatedButton(
+                onPressed: isSubmitting ? null : _submit,
+                child: isSubmitting
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text('Ajouter le terrain'),
               ),
             ],
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: isSubmitting ? null : _submit,
-              child: isSubmitting
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Ajouter'),
-            ),
-          ],
+          ),
         ),
       ),
     );
