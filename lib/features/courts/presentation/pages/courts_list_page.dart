@@ -45,11 +45,13 @@ class CourtsListPage extends ConsumerWidget {
           return RefreshIndicator(
             onRefresh: () async => ref.invalidate(nearbyCourtsProvider),
             child: ListView.separated(
+              // Extra bottom padding so the last card clears the floating
+              // action button instead of sitting under it.
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.lg,
                 AppSpacing.lg,
                 AppSpacing.lg,
-                AppSpacing.xxxl,
+                AppSpacing.xxxl * 2,
               ),
               itemCount: courts.length,
               separatorBuilder: (context, index) =>

@@ -116,8 +116,11 @@ class _CourtsMapPageState extends ConsumerState<CourtsMapPage> {
                   ),
                   const Align(
                     alignment: Alignment.bottomLeft,
+                    // SimpleAttributionWidget already renders
+                    // 'flutter_map | © ' before source, so source itself
+                    // must not repeat the © symbol.
                     child: SimpleAttributionWidget(
-                      source: Text('© les contributeurs d\'OpenStreetMap'),
+                      source: Text("les contributeurs d'OpenStreetMap"),
                     ),
                   ),
                 ],
@@ -142,7 +145,9 @@ class _CourtsMapPageState extends ConsumerState<CourtsMapPage> {
                 Positioned(
                   left: AppSpacing.lg,
                   right: AppSpacing.lg,
-                  bottom: AppSpacing.lg,
+                  // Clears the OpenStreetMap attribution pinned to the
+                  // map's bottom-left corner.
+                  bottom: AppSpacing.xxxl,
                   child: CourtPreviewCard(
                     courtWithDistance: selected,
                     onClose: () => setState(() => _selected = null),
