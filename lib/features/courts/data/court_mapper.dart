@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../domain/court.dart';
+import 'commons_urls.dart';
 
 class CourtMappingException implements Exception {
   CourtMappingException(this.message);
@@ -31,7 +32,19 @@ Court courtFromSnapshot(DocumentSnapshot<Map<String, dynamic>> snapshot) {
     hoopCount: hoopCount,
     isOutdoor: isOutdoor,
     createdAt: createdAt.toDate(),
+    imageUrl: _imageUrlOf(data),
   );
+}
+
+/// Same restriction as the Overpass mapper: only a Commons-resolvable
+/// URL is used, since that's the only source paired with a fetchable
+/// author/license (see data/commons_attribution.dart).
+String? _imageUrlOf(Map<String, dynamic> data) {
+  final imageUrl = data['imageUrl'];
+  if (imageUrl is! String) return null;
+  final fileTitle = commonsFileTitleFromUrl(imageUrl);
+  if (fileTitle == null) return null;
+  return commonsFilePathUrl(fileTitle);
 }
 
 (double, double) _coordinatesOf(Map<String, dynamic> data, String documentId) {

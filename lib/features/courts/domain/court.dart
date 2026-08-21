@@ -7,6 +7,7 @@ class Court {
     required this.hoopCount,
     required this.isOutdoor,
     required this.createdAt,
+    this.imageUrl,
   });
 
   final String id;
@@ -16,6 +17,14 @@ class Court {
   final int hoopCount;
   final bool isOutdoor;
   final DateTime createdAt;
+
+  /// A direct, already-resolved image URL, present only when the source
+  /// data points to a Wikimedia Commons file (see
+  /// data/commons_attribution.dart) — the only source this app can pair
+  /// with a reliably fetchable author/license, which is a legal
+  /// requirement for displaying it. Never a bare OpenStreetMap `image=*`
+  /// URL pointing somewhere else.
+  final String? imageUrl;
 
   @override
   bool operator ==(Object other) {
@@ -27,7 +36,8 @@ class Court {
         other.longitude == longitude &&
         other.hoopCount == hoopCount &&
         other.isOutdoor == isOutdoor &&
-        other.createdAt == createdAt;
+        other.createdAt == createdAt &&
+        other.imageUrl == imageUrl;
   }
 
   @override
@@ -39,5 +49,6 @@ class Court {
     hoopCount,
     isOutdoor,
     createdAt,
+    imageUrl,
   );
 }

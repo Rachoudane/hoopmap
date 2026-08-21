@@ -4,6 +4,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../domain/court_with_distance.dart';
 import '../../domain/distance.dart';
 import 'court_pill.dart';
+import 'court_photo.dart';
 
 class CourtCard extends StatelessWidget {
   const CourtCard({super.key, required this.courtWithDistance, this.onTap});
@@ -26,16 +27,22 @@ class CourtCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
+              SizedBox(
                 width: 48,
                 height: 48,
-                decoration: BoxDecoration(
-                  color: colorScheme.primary.withValues(alpha: 0.14),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.sports_basketball,
-                  color: colorScheme.primary,
+                child: CourtPhoto(
+                  imageUrl: court.imageUrl,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  fallback: Container(
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary.withValues(alpha: 0.14),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.sports_basketball,
+                      color: colorScheme.primary,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: AppSpacing.md),

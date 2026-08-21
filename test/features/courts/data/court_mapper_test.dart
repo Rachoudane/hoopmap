@@ -38,6 +38,58 @@ void main() {
       );
     });
 
+    test(
+      'resolves a Commons wiki page imageUrl to a Special:FilePath URL',
+      () async {
+        final firestore = FakeFirebaseFirestore();
+        await firestore.collection('courts').doc('court-1').set({
+          'name': 'Terrain Central',
+          'location': const GeoPoint(48.8566, 2.3522),
+          'hoopCount': 4,
+          'isOutdoor': true,
+          'createdAt': Timestamp.fromDate(DateTime(2026, 1, 15)),
+          'imageUrl': 'https://commons.wikimedia.org/wiki/File:Court.jpg',
+        });
+
+        final snapshot = await firestore
+            .collection('courts')
+            .doc('court-1')
+            .get();
+
+        final court = courtFromSnapshot(snapshot);
+
+        expect(
+          court.imageUrl,
+          'https://commons.wikimedia.org/wiki/Special:FilePath/Court.jpg'
+          '?width=800',
+        );
+      },
+    );
+
+    test(
+      'ignores an imageUrl that is not resolvable to a Commons file',
+      () async {
+        final firestore = FakeFirebaseFirestore();
+        await firestore.collection('courts').doc('court-1').set({
+          'name': 'Terrain Central',
+          'location': const GeoPoint(48.8566, 2.3522),
+          'hoopCount': 4,
+          'isOutdoor': true,
+          'createdAt': Timestamp.fromDate(DateTime(2026, 1, 15)),
+          'imageUrl': 'https://example.com/random-photo.jpg',
+        });
+
+        final snapshot = await firestore
+            .collection('courts')
+            .doc('court-1')
+            .get();
+
+        final court = courtFromSnapshot(snapshot);
+
+        expect(court.imageUrl, isNull);
+      },
+    );
+
     test('throws CourtMappingException when name is missing', () async {
       final firestore = FakeFirebaseFirestore();
       await firestore.collection('courts').doc('court-1').set({
