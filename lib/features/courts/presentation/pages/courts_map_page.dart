@@ -129,14 +129,16 @@ class _CourtsMapPageState extends ConsumerState<CourtsMapPage> {
               Positioned(
                 top: AppSpacing.lg,
                 right: AppSpacing.lg,
-                child: FloatingActionButton.small(
+                // A default-sized (56dp) FAB, not .small (40dp, below the
+                // 48dp minimum touch target).
+                child: FloatingActionButton(
                   heroTag: 'recenter',
                   onPressed: _recentering ? null : _recenterOnUser,
                   tooltip: 'Recentrer sur ma position',
                   child: _recentering
                       ? const SizedBox(
-                          width: 18,
-                          height: 18,
+                          width: 20,
+                          height: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.my_location),
