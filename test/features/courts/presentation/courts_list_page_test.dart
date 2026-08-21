@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoopmap/app.dart';
@@ -7,6 +8,8 @@ import 'package:hoopmap/features/courts/domain/court_with_distance.dart';
 import 'package:hoopmap/features/courts/presentation/court_detail_provider.dart';
 import 'package:hoopmap/features/courts/presentation/nearby_courts_notifier.dart';
 import 'package:hoopmap/features/courts/presentation/pages/court_detail_page.dart';
+import 'package:hoopmap/features/courts/presentation/pages/courts_list_page.dart';
+import 'package:hoopmap/features/courts/presentation/widgets/court_list_skeleton.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Court _court(String id, String name) => Court(
@@ -82,4 +85,70 @@ void main() {
       expect(detailPage.courtId, 'court-a');
     },
   );
+
+  testWidgets('shows a skeleton, not a bare spinner, while loading', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
+            // Never yields: the page should still be in its loading state.
+          }),
+        ],
+        child: const MaterialApp(home: CourtsListPage()),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(CourtListSkeleton), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+  });
+
+  testWidgets('shows an illustrated empty state with a working action', (
+    tester,
+  ) async {
+    var invalidated = false;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
+            ref.onDispose(() => invalidated = true);
+            yield const [];
+          }),
+        ],
+        child: const MaterialApp(home: CourtsListPage()),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Aucun terrain à proximité'), findsOneWidget);
+
+    await tester.tap(find.text('Actualiser'));
+    await tester.pump();
+
+    expect(invalidated, true);
+  });
+
+  testWidgets('shows a human-readable error with a working retry button', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
+            throw Exception('boom');
+          }),
+        ],
+        child: const MaterialApp(home: CourtsListPage()),
+      ),
+    );
+    await tester.pump();
+
+    expect(
+      find.text('Une erreur inattendue est survenue. Réessayez.'),
+      findsOneWidget,
+    );
+    expect(find.text('Réessayer'), findsOneWidget);
+  });
 }
