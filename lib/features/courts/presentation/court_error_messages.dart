@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 import '../../../core/location/location_service.dart';
 import '../data/overpass_court_repository.dart';
 import '../domain/court_repository.dart';
@@ -30,4 +32,17 @@ String courtErrorMessage(Object error) {
     return "Ce terrain est introuvable. Il a peut-être été supprimé.";
   }
   return 'Une erreur inattendue est survenue. Réessayez.';
+}
+
+/// An icon matching [courtErrorMessage]'s cause, so a location-permission
+/// error doesn't show a network icon (or vice versa).
+IconData courtErrorIcon(Object error) {
+  if (error is LocationPermissionDeniedException ||
+      error is LocationServiceDisabledException) {
+    return Icons.location_off_rounded;
+  }
+  if (error is CourtNotFoundException) {
+    return Icons.search_off;
+  }
+  return Icons.wifi_off_rounded;
 }

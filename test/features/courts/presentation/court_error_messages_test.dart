@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoopmap/core/location/location_service.dart';
 import 'package:hoopmap/features/courts/data/overpass_court_repository.dart';
@@ -49,6 +50,34 @@ void main() {
       expect(
         courtErrorMessage(Exception('anything else')),
         'Une erreur inattendue est survenue. Réessayez.',
+      );
+    });
+  });
+
+  group('courtErrorIcon', () {
+    test('uses a location icon for location-related errors', () {
+      expect(
+        courtErrorIcon(const LocationPermissionDeniedException()),
+        Icons.location_off_rounded,
+      );
+      expect(
+        courtErrorIcon(const LocationServiceDisabledException()),
+        Icons.location_off_rounded,
+      );
+    });
+
+    test('uses a search icon for a missing court', () {
+      expect(
+        courtErrorIcon(CourtNotFoundException('court-1')),
+        Icons.search_off,
+      );
+    });
+
+    test('falls back to a network icon for everything else', () {
+      expect(courtErrorIcon(OverpassException('boom')), Icons.wifi_off_rounded);
+      expect(
+        courtErrorIcon(Exception('anything else')),
+        Icons.wifi_off_rounded,
       );
     });
   });

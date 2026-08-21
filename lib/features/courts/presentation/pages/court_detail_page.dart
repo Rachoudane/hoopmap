@@ -40,6 +40,7 @@ class CourtDetailPage extends ConsumerWidget {
             }
             return AppErrorView(
               message: courtErrorMessage(error),
+              icon: courtErrorIcon(error),
               onRetry: () => ref.invalidate(courtDetailProvider(courtId)),
             );
           },

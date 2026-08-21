@@ -5,10 +5,16 @@ import '../../theme/app_spacing.dart';
 /// Full-body placeholder for an error state: an icon, a human-readable
 /// message and, when [onRetry] is provided, a working "Réessayer" button.
 class AppErrorView extends StatelessWidget {
-  const AppErrorView({super.key, required this.message, this.onRetry});
+  const AppErrorView({
+    super.key,
+    required this.message,
+    this.onRetry,
+    this.icon = Icons.wifi_off_rounded,
+  });
 
   final String message;
   final VoidCallback? onRetry;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
@@ -20,11 +26,7 @@ class AppErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.wifi_off_rounded,
-              size: 48,
-              color: colorScheme.onSurfaceVariant,
-            ),
+            Icon(icon, size: 48, color: colorScheme.onSurfaceVariant),
             const SizedBox(height: AppSpacing.lg),
             Text(
               message,

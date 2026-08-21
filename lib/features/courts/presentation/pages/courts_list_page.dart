@@ -28,6 +28,7 @@ class CourtsListPage extends ConsumerWidget {
         loading: () => const CourtListSkeleton(),
         error: (error, stackTrace) => AppErrorView(
           message: courtErrorMessage(error),
+          icon: courtErrorIcon(error),
           onRetry: () => ref.invalidate(nearbyCourtsProvider),
         ),
         data: (courts) {

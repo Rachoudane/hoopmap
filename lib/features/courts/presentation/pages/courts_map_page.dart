@@ -59,6 +59,7 @@ class _CourtsMapPageState extends ConsumerState<CourtsMapPage> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stackTrace) => AppErrorView(
           message: courtErrorMessage(error),
+          icon: courtErrorIcon(error),
           onRetry: () => ref.invalidate(nearbyCourtsProvider),
         ),
         data: (courts) {
