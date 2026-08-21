@@ -10,9 +10,9 @@ Application Flutter qui aide à trouver des terrains de basket où que l'on soit
 - Localise l'utilisateur et affiche les terrains de basket à proximité, triés par distance, sous forme de liste ou de carte — accessibles via une navigation par onglets en bas d'écran.
 - Recherche les terrains OpenStreetMap à la volée dans la zone géographique concernée plutôt que dans une base préchargée, pour fonctionner n'importe où dans le monde.
 - Fusionne ces résultats avec les terrains ajoutés par les utilisateurs, stockés dans Firestore.
-- Affiche une fiche par terrain (nom, nombre de paniers, intérieur/extérieur, coordonnées), accessible aussi par deep link.
+- Affiche une fiche par terrain (nom, nombre de paniers, intérieur/extérieur, coordonnées), accessible aussi par deep link, avec sa photo quand une source Wikimedia Commons exploitable existe (voir [Photos des terrains](#photos-des-terrains)).
 - Propose un bouton "Itinéraire" qui ouvre l'application de cartographie du téléphone sur les coordonnées du terrain.
-- Permet d'ajouter un terrain (nom, nombre de paniers, intérieur/extérieur, position) via un formulaire, après une authentification anonyme automatique.
+- Permet d'ajouter un terrain (nom, nombre de paniers, intérieur/extérieur, position choisie sur une carte ou au GPS) via un formulaire, après une authentification anonyme automatique.
 - Chaque état réseau (hors-ligne, service Overpass indisponible ou limité, aucun terrain trouvé, terrain introuvable) affiche un écran dédié avec un message compréhensible, jamais une exception brute.
 
 ## Sources de données
@@ -35,8 +35,13 @@ Le repository composite fusionne les deux listes en dédupliquant par identifian
 - `flutter_map` + `latlong2` pour l'affichage cartographique (tuiles OpenStreetMap)
 - `url_launcher` pour ouvrir l'application de cartographie du téléphone
 - `shared_preferences` pour mémoriser que l'onboarding a été vu
+- `cached_network_image` pour la photo d'un terrain (mise en cache disque, chargement paresseux)
 - `flutter_launcher_icons` et `flutter_native_splash` (dev only) pour décliner l'icône et l'écran de démarrage générés par `tool/generate_brand_assets.py`
 - Tests : `flutter_test`, `fake_cloud_firestore`, et des faux clients HTTP / repositories écrits à la main
+
+## Photos des terrains
+
+Quand un élément OpenStreetMap porte un tag `wikimedia_commons` (`File:...`) ou un tag `image` pointant vers Wikimedia Commons, `Court.imageUrl` est renseigné et la photo est affichée dans la fiche terrain et en vignette dans la liste (voir `lib/features/courts/data/commons_urls.dart` et `commons_attribution.dart`). Toute autre URL d'`image` OSM est ignorée volontairement : Commons est la seule source pour laquelle l'app peut récupérer un auteur et une licence de façon fiable (`commonsAttributionProvider`, API Commons `imageinfo`/`extmetadata`), condition légale à l'affichage d'une photo sous licence. Tant que cette attribution n'est pas résolue avec un auteur exploitable, le visuel de repli de la charte s'affiche à la place de la photo.
 
 ## Identité visuelle
 
@@ -87,3 +92,11 @@ firebase deploy --only firestore:rules
 ## Architecture
 
 Le détail de l'architecture (couches, pattern repository, stratégie de test, limites connues) est documenté dans [docs/architecture.md](docs/architecture.md).
+
+## Publier une release
+
+Prérequis, variables d'environnement et procédure complète (y compris la génération du keystore) dans [docs/release.md](docs/release.md). En résumé :
+
+```powershell
+.\tool\build_release.ps1
+```

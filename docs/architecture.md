@@ -25,6 +25,14 @@ Comme une fiche terrain peut aussi être ouverte directement par un deep link à
 
 Aucune page n'affiche un type d'exception brut. `features/courts/presentation/court_error_messages.dart` traduit chaque exception métier (échec Overpass, limitation de débit 429, permission ou service de localisation refusé/désactivé, terrain introuvable) en un message français actionnable, affiché par `AppErrorView`/`AppEmptyView` (`core/presentation/widgets/`) avec un bouton Réessayer qui invalide le provider concerné.
 
+## Photos des terrains et attribution Wikimedia Commons
+
+`Court.imageUrl` (optionnel) n'est jamais alimenté à partir d'une URL `image=*` OSM arbitraire : `data/commons_urls.dart` ne résout que les références qui pointent vers Wikimedia Commons (tag `wikimedia_commons` au format `File:...`, ou une URL `image`/Firestore déjà hébergée sur Commons), et renvoie `null` sinon. C'est une contrainte légale, pas seulement technique — c'est la seule source pour laquelle `data/commons_attribution.dart` peut interroger l'API Commons (`imageinfo`/`extmetadata`) et obtenir un auteur. Le widget `CourtPhoto` (`presentation/widgets/`) n'affiche la photo qu'une fois cette attribution résolue avec un auteur non vide ; en cas d'échec, d'absence d'auteur, ou pendant la résolution, il affiche le visuel de repli de la charte à la place — jamais la photo sans attribution, jamais une zone vide.
+
+## Sélection de la position à l'ajout d'un terrain
+
+`AddCourtPage` garde une seule source de vérité pour la position (les contrôleurs de texte latitude/longitude), alimentée par trois voies équivalentes : la carte (`LocationPickerMap`, réticule fixe au centre, `onPositionChanged` du `FlutterMap` sous-jacent), le bouton "Ma position actuelle" (`LocationService`), et la saisie manuelle (repliée dans un `ExpansionTile` avec `maintainState: true`, pour que ses validateurs restent actifs même replié). Le bouton d'envoi reste désactivé tant qu'aucune position initiale n'est connue.
+
 ## Le pattern repository et le repository composite
 
 `CourtRepository` est l'unique abstraction que voit la couche `presentation` : `watchCourtsInBounds(GeoBounds)`, `watchCourt(String id)` et `addCourt(Court court)`. Trois classes l'implémentent :

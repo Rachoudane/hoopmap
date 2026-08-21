@@ -47,3 +47,10 @@ app.*.map.json
 # Firebase service account credentials: never committed.
 tool/service-account.json
 *.serviceaccount.json
+
+# Android release signing (see docs/release.md): generated locally from
+# environment variables, never committed.
+android/key.properties
+android/app/upload-keystore.jks
+*.jks
+*.keystore
