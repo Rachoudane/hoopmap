@@ -22,11 +22,18 @@ abstract final class AppColors {
   static const Color asphaltSurface = Color(0xFF1D2126);
   static const Color asphaltSurfaceElevated = Color(0xFF262B31);
   static const Color asphaltOutline = Color(0xFF3A4048);
+  // Used for borders that must stand on their own as a shape cue (text
+  // field, outlined button, pill), not just as a divider: darkened/
+  // lightened from asphaltOutline/chalkOutline to clear the WCAG 3:1
+  // non-text contrast threshold against the scaffold background — see
+  // tool/check_contrast.py.
+  static const Color asphaltOutlineStrong = Color(0xFF5C6572);
 
   static const Color chalk = Color(0xFFF6F3EE);
   static const Color chalkSurface = Color(0xFFFFFFFF);
   static const Color chalkSurfaceElevated = Color(0xFFFBF9F5);
   static const Color chalkOutline = Color(0xFFDDD8CF);
+  static const Color chalkOutlineStrong = Color(0xFF908C87);
 
   static const Color textDark = Color(0xFF1A1A18);
   static const Color textDarkSecondary = Color(0xFF5B5F66);
@@ -48,7 +55,7 @@ abstract final class AppColors {
     onSurface: textDark,
     surfaceContainerHighest: chalkSurfaceElevated,
     onSurfaceVariant: textDarkSecondary,
-    outline: chalkOutline,
+    outline: chalkOutlineStrong,
     outlineVariant: chalkOutline,
     inverseSurface: asphaltSurface,
     onInverseSurface: textLight,
@@ -66,7 +73,7 @@ abstract final class AppColors {
     onSurface: textLight,
     surfaceContainerHighest: asphaltSurfaceElevated,
     onSurfaceVariant: textLightSecondary,
-    outline: asphaltOutline,
+    outline: asphaltOutlineStrong,
     outlineVariant: asphaltOutline,
     inverseSurface: chalkSurface,
     onInverseSurface: textDark,

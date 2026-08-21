@@ -39,10 +39,12 @@ ASPHALT = "#14171B"
 ASPHALT_SURFACE = "#1D2126"
 ASPHALT_SURFACE_ELEVATED = "#262B31"
 ASPHALT_OUTLINE = "#3A4048"
+ASPHALT_OUTLINE_STRONG = "#5C6572"
 CHALK = "#F6F3EE"
 CHALK_SURFACE = "#FFFFFF"
 CHALK_SURFACE_ELEVATED = "#FBF9F5"
 CHALK_OUTLINE = "#DDD8CF"
+CHALK_OUTLINE_STRONG = "#908C87"
 TEXT_DARK = "#1A1A18"
 TEXT_DARK_SECONDARY = "#5B5F66"
 TEXT_LIGHT = "#F2F0EC"
@@ -82,7 +84,12 @@ PAIRS = [
         CHALK_SURFACE_ELEVATED,
         "normal",
     ),
-    ("light: outline on scaffold bg (non-text UI)", CHALK_OUTLINE, CHALK, "large"),
+    (
+        "light: outline on scaffold bg (non-text UI)",
+        CHALK_OUTLINE_STRONG,
+        CHALK,
+        "large",
+    ),
     # Dark theme
     (
         "dark: button label on primary (ElevatedButton)",
@@ -113,7 +120,12 @@ PAIRS = [
         ASPHALT_SURFACE_ELEVATED,
         "normal",
     ),
-    ("dark: outline on scaffold bg (non-text UI)", ASPHALT_OUTLINE, ASPHALT, "large"),
+    (
+        "dark: outline on scaffold bg (non-text UI)",
+        ASPHALT_OUTLINE_STRONG,
+        ASPHALT,
+        "large",
+    ),
 ]
 
 THRESHOLDS = {"normal": 4.5, "large": 3.0}
