@@ -51,7 +51,7 @@ Le script s'arrête à la première erreur et enchaîne dans l'ordre :
 5. `flutter build appbundle --release` — le format attendu par le Play Store ;
 6. `flutter build apk --release` — pour une installation directe (tests internes, distribution hors Play Store).
 
-Sans keystore valide, les étapes 1 à 4 réussissent normalement mais les étapes 5 et 6 échouent avec une erreur Gradle explicite (« Keystore file not set » ou équivalent) : c'est attendu, pas un bug du script.
+Sans keystore valide, les étapes 1 à 4 réussissent normalement mais les étapes 5 et 6 échouent au moment de la signature (tâche Gradle `signReleaseBundle`/`signReleaseApk`, typiquement une `NullPointerException` sans message quand `key.properties` n'existe pas) : c'est attendu, pas un bug du script — vérifié en le lançant sans les variables d'environnement positionnées.
 
 ## Résultats
 
