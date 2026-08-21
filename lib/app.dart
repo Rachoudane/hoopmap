@@ -11,8 +11,10 @@ class HoopmapApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(goRouterProvider);
     return MaterialApp.router(
-      title: 'Hoopmap',
-      theme: appTheme,
+      title: 'hoopmap',
+      theme: lightTheme,
+      darkTheme: darkTheme,
+      themeMode: ThemeMode.system,
       routerConfig: router,
     );
   }
