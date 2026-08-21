@@ -65,136 +65,139 @@ class _CourtDetailBody extends StatelessWidget {
         ? 'OpenStreetMap'
         : "Ajouté par un utilisateur de Hoopmap";
 
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (court.imageUrl != null)
+    return SafeArea(
+      top: false,
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (court.imageUrl != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.xl,
+                  AppSpacing.xl,
+                  AppSpacing.xl,
+                  0,
+                ),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 200,
+                  child: CourtPhoto(
+                    imageUrl: court.imageUrl,
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    showAttribution: true,
+                    fallback: Container(
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary.withValues(alpha: 0.14),
+                      ),
+                      child: Icon(
+                        Icons.sports_basketball,
+                        size: 48,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.xl,
+                court.imageUrl != null ? AppSpacing.lg : AppSpacing.xl,
                 AppSpacing.xl,
                 AppSpacing.xl,
-                AppSpacing.xl,
-                0,
               ),
-              child: SizedBox(
-                width: double.infinity,
-                height: 200,
-                child: CourtPhoto(
-                  imageUrl: court.imageUrl,
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                  showAttribution: true,
-                  fallback: Container(
-                    decoration: BoxDecoration(
-                      color: colorScheme.primary.withValues(alpha: 0.14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (court.imageUrl == null) ...[
+                    Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary.withValues(alpha: 0.14),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.sports_basketball,
+                        size: 36,
+                        color: colorScheme.primary,
+                      ),
                     ),
-                    child: Icon(
-                      Icons.sports_basketball,
-                      size: 48,
-                      color: colorScheme.primary,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              AppSpacing.xl,
-              court.imageUrl != null ? AppSpacing.lg : AppSpacing.xl,
-              AppSpacing.xl,
-              AppSpacing.xl,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (court.imageUrl == null) ...[
-                  Container(
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      color: colorScheme.primary.withValues(alpha: 0.14),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.sports_basketball,
-                      size: 36,
-                      color: colorScheme.primary,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                ],
-                Text(court.name, style: textTheme.displaySmall),
-                const SizedBox(height: AppSpacing.md),
-                Wrap(
-                  spacing: AppSpacing.sm,
-                  runSpacing: AppSpacing.sm,
-                  children: [
-                    CourtPill(
-                      icon: court.isOutdoor
-                          ? Icons.wb_sunny_outlined
-                          : Icons.home_work_outlined,
-                      label: court.isOutdoor
-                          ? 'Terrain extérieur'
-                          : 'Terrain intérieur',
-                    ),
-                    CourtPill(
-                      icon: Icons.sports_basketball_outlined,
-                      label:
-                          '${court.hoopCount} '
-                          '${court.hoopCount > 1 ? 'paniers' : 'panier'}',
-                    ),
+                    const SizedBox(height: AppSpacing.lg),
                   ],
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                Divider(color: colorScheme.outlineVariant),
-                const SizedBox(height: AppSpacing.lg),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.place_outlined,
-                      size: 20,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Text(
-                      '${court.latitude.toStringAsFixed(5)}, '
-                      '${court.longitude.toStringAsFixed(5)}',
-                      style: textTheme.bodyMedium?.copyWith(
+                  Text(court.name, style: textTheme.displaySmall),
+                  const SizedBox(height: AppSpacing.md),
+                  Wrap(
+                    spacing: AppSpacing.sm,
+                    runSpacing: AppSpacing.sm,
+                    children: [
+                      CourtPill(
+                        icon: court.isOutdoor
+                            ? Icons.wb_sunny_outlined
+                            : Icons.home_work_outlined,
+                        label: court.isOutdoor
+                            ? 'Terrain extérieur'
+                            : 'Terrain intérieur',
+                      ),
+                      CourtPill(
+                        icon: Icons.sports_basketball_outlined,
+                        label:
+                            '${court.hoopCount} '
+                            '${court.hoopCount > 1 ? 'paniers' : 'panier'}',
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  Divider(color: colorScheme.outlineVariant),
+                  const SizedBox(height: AppSpacing.lg),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.place_outlined,
+                        size: 20,
                         color: colorScheme.onSurfaceVariant,
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () => _openDirections(court),
-                    icon: const Icon(Icons.directions),
-                    label: const Text('Itinéraire'),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      size: 16,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: AppSpacing.xs),
-                    Expanded(
-                      child: Text(
-                        'Source : $source',
-                        style: textTheme.bodySmall,
+                      const SizedBox(width: AppSpacing.sm),
+                      Text(
+                        '${court.latitude.toStringAsFixed(5)}, '
+                        '${court.longitude.toStringAsFixed(5)}',
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _openDirections(court),
+                      icon: const Icon(Icons.directions),
+                      label: const Text('Itinéraire'),
                     ),
-                  ],
-                ),
-              ],
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      Expanded(
+                        child: Text(
+                          'Source : $source',
+                          style: textTheme.bodySmall,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

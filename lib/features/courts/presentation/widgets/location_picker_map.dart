@@ -40,10 +40,21 @@ class LocationPickerMap extends StatelessWidget {
               urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
               userAgentPackageName: 'com.rachoucorp.hoopmap',
             ),
-            const Align(
+            // A plain Text rather than SimpleAttributionWidget: this map is
+            // embedded in a narrower container (inside a form, not full
+            // screen), and SimpleAttributionWidget's Row-based layout would
+            // overflow there. This one clips gracefully instead.
+            Align(
               alignment: Alignment.bottomLeft,
-              child: SimpleAttributionWidget(
-                source: Text("les contributeurs d'OpenStreetMap"),
+              child: Container(
+                color: Colors.black.withValues(alpha: 0.55),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                child: const Text(
+                  '© OpenStreetMap',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: Colors.white, fontSize: 11),
+                ),
               ),
             ),
           ],
