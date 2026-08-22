@@ -20,7 +20,7 @@ final List<CourtWithDistance> _fixedCourts = [
   CourtWithDistance(
     court: Court(
       id: 'court-a',
-      name: 'Terrain A',
+      name: 'Court A',
       latitude: 0,
       longitude: 0,
       hoopCount: 1,
@@ -36,7 +36,7 @@ final List<CourtWithDistance> _fixedCourts = [
 // navigation, so the family is overridden wholesale with a fake court.
 Court _fakeCourtDetail(String id) => Court(
   id: id,
-  name: 'Terrain $id',
+  name: 'Court $id',
   latitude: 0,
   longitude: 0,
   hoopCount: 1,
@@ -211,12 +211,12 @@ void main() {
     expect(find.byType(CourtsListPage), findsOneWidget);
     expect(find.byType(CourtsMapPage), findsNothing);
 
-    await tester.tap(find.text('Carte'));
+    await tester.tap(find.text('Map'));
     await tester.pumpAndSettle();
 
     expect(find.byType(CourtsMapPage), findsOneWidget);
 
-    await tester.tap(find.text('Liste'));
+    await tester.tap(find.text('List'));
     await tester.pumpAndSettle();
 
     expect(find.byType(CourtsListPage), findsOneWidget);

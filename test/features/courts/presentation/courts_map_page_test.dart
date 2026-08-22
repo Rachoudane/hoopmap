@@ -24,15 +24,15 @@ void main() {
   ) async {
     final courts = [
       CourtWithDistance(
-        court: _court('court-a', 'Terrain A'),
+        court: _court('court-a', 'Court A'),
         distanceInMeters: 450,
       ),
       CourtWithDistance(
-        court: _court('court-b', 'Terrain B'),
+        court: _court('court-b', 'Court B'),
         distanceInMeters: 1200,
       ),
       CourtWithDistance(
-        court: _court('court-c', 'Terrain C'),
+        court: _court('court-c', 'Court C'),
         distanceInMeters: 2400,
       ),
     ];
@@ -60,7 +60,7 @@ void main() {
   ) async {
     final courts = [
       CourtWithDistance(
-        court: _court('court-a', 'Terrain A'),
+        court: _court('court-a', 'Court A'),
         distanceInMeters: 450,
       ),
     ];
@@ -77,18 +77,18 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Terrain A'), findsNothing);
+    expect(find.text('Court A'), findsNothing);
 
     await tester.tap(find.byType(CourtMarker));
     await tester.pump();
 
-    expect(find.text('Terrain A'), findsOneWidget);
+    expect(find.text('Court A'), findsOneWidget);
     expect(find.text('450 m'), findsOneWidget);
 
     await tester.tap(find.byIcon(Icons.close));
     await tester.pump();
 
-    expect(find.text('Terrain A'), findsNothing);
+    expect(find.text('Court A'), findsNothing);
   });
 
   testWidgets('shows an illustrated empty state when there are no courts', (
@@ -106,7 +106,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Aucun terrain à proximité'), findsOneWidget);
+    expect(find.text('No courts nearby'), findsOneWidget);
     expect(find.byType(FlutterMap), findsNothing);
   });
 
@@ -125,10 +125,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(
-      find.text('Une erreur inattendue est survenue. Réessayez.'),
-      findsOneWidget,
-    );
-    expect(find.text('Réessayer'), findsOneWidget);
+    expect(find.text('Something went wrong. Try again.'), findsOneWidget);
+    expect(find.text('Retry'), findsOneWidget);
   });
 }

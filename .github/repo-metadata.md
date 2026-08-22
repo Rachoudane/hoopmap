@@ -1,12 +1,12 @@
-# Métadonnées du dépôt GitHub
+# GitHub repository metadata
 
-Valeurs à recopier dans les paramètres du dépôt (About) sur github.com/Rachoudane/hoopmap.
+Values to copy into the repository settings (About) on github.com/Rachoudane/hoopmap.
 
 ## Description
 
-Application Flutter qui localise des terrains de basket dans le monde entier, en combinant les données OpenStreetMap (via Overpass) et les terrains ajoutés par les utilisateurs dans Firestore.
+A Flutter app that finds basketball courts worldwide, combining OpenStreetMap data (via Overpass) with courts added by users in Firestore.
 
-(194 caractères, sous la limite de 350.)
+(163 characters, under the 350 limit.)
 
 ## Topics
 

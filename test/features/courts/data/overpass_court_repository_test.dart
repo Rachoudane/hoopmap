@@ -73,7 +73,7 @@ void main() {
       expect(node.isOutdoor, true);
 
       final way = courts.singleWhere((c) => c.id == 'osm:way-222');
-      expect(way.name, 'Terrain de basket');
+      expect(way.name, 'Basketball court');
       expect(way.latitude, 48.86);
       expect(way.longitude, 2.36);
       expect(way.hoopCount, 2);

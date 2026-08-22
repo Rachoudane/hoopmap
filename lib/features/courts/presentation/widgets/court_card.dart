@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../domain/court_with_distance.dart';
 import '../../domain/distance.dart';
@@ -65,13 +66,13 @@ class CourtCard extends StatelessWidget {
                           icon: court.isOutdoor
                               ? Icons.wb_sunny_outlined
                               : Icons.home_work_outlined,
-                          label: court.isOutdoor ? 'Extérieur' : 'Intérieur',
+                          label: court.isOutdoor
+                              ? AppStrings.outdoor
+                              : AppStrings.indoor,
                         ),
                         CourtPill(
                           icon: Icons.sports_basketball_outlined,
-                          label:
-                              '${court.hoopCount} '
-                              '${court.hoopCount > 1 ? 'paniers' : 'panier'}',
+                          label: AppStrings.hoopCount(court.hoopCount),
                         ),
                       ],
                     ),

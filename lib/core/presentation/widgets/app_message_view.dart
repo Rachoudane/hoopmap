@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_strings.dart';
 import '../../theme/app_spacing.dart';
 
 /// Full-body placeholder for an error state: an icon, a human-readable
-/// message and, when [onRetry] is provided, a working "Réessayer" button.
+/// message and, when [onRetry] is provided, a working "Retry" button.
 class AppErrorView extends StatelessWidget {
   const AppErrorView({
     super.key,
@@ -38,7 +39,7 @@ class AppErrorView extends StatelessWidget {
               OutlinedButton.icon(
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh),
-                label: const Text('Réessayer'),
+                label: const Text(AppStrings.retry),
               ),
             ],
           ],

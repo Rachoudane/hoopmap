@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-/// Bottom navigation between the two top-level destinations (Liste, Carte).
+import '../../l10n/app_strings.dart';
+
+/// Bottom navigation between the two top-level destinations (List, Map).
 /// Wraps a [StatefulShellRoute.indexedStack] branch so each tab keeps its
 /// own navigation stack and scroll position when switching back and forth.
 class AppShell extends StatelessWidget {
@@ -23,12 +25,12 @@ class AppShell extends StatelessWidget {
           NavigationDestination(
             icon: Icon(Icons.format_list_bulleted_outlined),
             selectedIcon: Icon(Icons.format_list_bulleted),
-            label: 'Liste',
+            label: AppStrings.navList,
           ),
           NavigationDestination(
             icon: Icon(Icons.map_outlined),
             selectedIcon: Icon(Icons.map),
-            label: 'Carte',
+            label: AppStrings.navMap,
           ),
         ],
       ),

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/presentation/widgets/app_message_view.dart';
 import '../../../../core/router/back_to_home_scope.dart';
 import '../../../../core/router/routes.dart';
@@ -25,16 +26,16 @@ class CourtDetailPage extends ConsumerWidget {
 
     return BackToHomeScope(
       child: Scaffold(
-        appBar: AppBar(title: const Text('Détail du terrain')),
+        appBar: AppBar(title: const Text(AppStrings.courtDetailTitle)),
         body: courtAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, stackTrace) {
             if (error is CourtNotFoundException) {
               return AppEmptyView(
                 icon: Icons.search_off,
-                title: 'Terrain introuvable',
+                title: AppStrings.courtNotFoundTitle,
                 message: courtErrorMessage(error),
-                actionLabel: 'Retour à la liste',
+                actionLabel: AppStrings.backToList,
                 onAction: () => context.go(Routes.home),
               );
             }
@@ -63,7 +64,7 @@ class _CourtDetailBody extends StatelessWidget {
     final isFromOpenStreetMap = court.id.startsWith('osm:');
     final source = isFromOpenStreetMap
         ? 'OpenStreetMap'
-        : "Ajouté par un utilisateur de Hoopmap";
+        : AppStrings.addedByHoopmapUser;
 
     return SafeArea(
       top: false,
@@ -136,14 +137,12 @@ class _CourtDetailBody extends StatelessWidget {
                             ? Icons.wb_sunny_outlined
                             : Icons.home_work_outlined,
                         label: court.isOutdoor
-                            ? 'Terrain extérieur'
-                            : 'Terrain intérieur',
+                            ? AppStrings.outdoorCourt
+                            : AppStrings.indoorCourt,
                       ),
                       CourtPill(
                         icon: Icons.sports_basketball_outlined,
-                        label:
-                            '${court.hoopCount} '
-                            '${court.hoopCount > 1 ? 'paniers' : 'panier'}',
+                        label: AppStrings.hoopCount(court.hoopCount),
                       ),
                     ],
                   ),
@@ -173,7 +172,7 @@ class _CourtDetailBody extends StatelessWidget {
                     child: ElevatedButton.icon(
                       onPressed: () => _openDirections(court),
                       icon: const Icon(Icons.directions),
-                      label: const Text('Itinéraire'),
+                      label: const Text(AppStrings.directions),
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xl),
@@ -187,7 +186,7 @@ class _CourtDetailBody extends StatelessWidget {
                       const SizedBox(width: AppSpacing.xs),
                       Expanded(
                         child: Text(
-                          'Source : $source',
+                          AppStrings.source(source),
                           style: textTheme.bodySmall,
                         ),
                       ),

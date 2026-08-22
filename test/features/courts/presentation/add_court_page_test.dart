@@ -68,7 +68,7 @@ Future<_FakeCourtRepository> _pumpAddCourtPage(
   LocationService? locationService,
 }) async {
   // The map picker pushes the rest of the form (position summary, "Saisir
-  // les coordonnées", the submit button) below the default test surface's
+  // coordinates", the submit button) below the default test surface's
   // viewport + cache extent, leaving them unbuilt. A taller surface avoids
   // scrolling gymnastics for every interaction below the map.
   tester.view.physicalSize = const Size(1080, 3000);
@@ -124,11 +124,11 @@ void main() {
       await tester.enterText(find.byType(TextFormField).at(0), 'ab');
       await tester.enterText(find.byType(TextFormField).at(1), '4');
 
-      await tester.tap(find.text('Ajouter le terrain'));
+      await tester.tap(find.text('Add court'));
       await tester.pump();
 
       expect(
-        find.text('Le nom doit contenir entre 3 et 60 caractères'),
+        find.text('Name must be between 3 and 60 characters'),
         findsOneWidget,
       );
       expect(repository.addCourtCallCount, 0);
@@ -139,10 +139,10 @@ void main() {
       'touching the map or the coordinate fields', (tester) async {
     final repository = await _pumpAddCourtPage(tester);
 
-    await tester.enterText(find.byType(TextFormField).at(0), 'Terrain Valide');
+    await tester.enterText(find.byType(TextFormField).at(0), 'Valid Court');
     await tester.enterText(find.byType(TextFormField).at(1), '4');
 
-    await tester.tap(find.text('Ajouter le terrain'));
+    await tester.tap(find.text('Add court'));
     await tester.pump();
 
     expect(repository.addCourtCallCount, 1);
@@ -164,12 +164,9 @@ void main() {
       expect(find.textContaining('45.764000'), findsOneWidget);
       expect(find.textContaining('4.835700'), findsOneWidget);
 
-      await tester.enterText(
-        find.byType(TextFormField).at(0),
-        'Terrain Déplacé',
-      );
+      await tester.enterText(find.byType(TextFormField).at(0), 'Moved Court');
       await tester.enterText(find.byType(TextFormField).at(1), '3');
-      await tester.tap(find.text('Ajouter le terrain'));
+      await tester.tap(find.text('Add court'));
       await tester.pump();
 
       expect(repository.addCourtCallCount, 1);
@@ -178,42 +175,41 @@ void main() {
     },
   );
 
-  testWidgets(
-    '"Ma position actuelle" re-fetches and applies the GPS position',
-    (tester) async {
-      final repository = await _pumpAddCourtPage(tester);
+  testWidgets('"My current location" re-fetches and applies the GPS position', (
+    tester,
+  ) async {
+    final repository = await _pumpAddCourtPage(tester);
 
-      final mapWidget = tester.widget<LocationPickerMap>(
-        find.byType(LocationPickerMap),
-      );
-      mapWidget.onCenterChanged(const LatLng(0, 0));
-      await tester.pump();
-      await tester.pump();
-      expect(find.textContaining('0.000000'), findsWidgets);
+    final mapWidget = tester.widget<LocationPickerMap>(
+      find.byType(LocationPickerMap),
+    );
+    mapWidget.onCenterChanged(const LatLng(0, 0));
+    await tester.pump();
+    await tester.pump();
+    expect(find.textContaining('0.000000'), findsWidgets);
 
-      // Invokes the button's callback directly rather than tap(): the map
-      // picker's own layout makes precise on-screen hit-test coordinates
-      // for widgets below it unreliable at the taller test surface size
-      // this file uses, which isn't what this test is about.
-      final button = tester.widget<TextButton>(
-        find.widgetWithText(TextButton, 'Ma position actuelle'),
-      );
-      button.onPressed!();
-      await tester.pump();
-      await tester.pump();
+    // Invokes the button's callback directly rather than tap(): the map
+    // picker's own layout makes precise on-screen hit-test coordinates
+    // for widgets below it unreliable at the taller test surface size
+    // this file uses, which isn't what this test is about.
+    final button = tester.widget<TextButton>(
+      find.widgetWithText(TextButton, 'My current location'),
+    );
+    button.onPressed!();
+    await tester.pump();
+    await tester.pump();
 
-      expect(find.textContaining('48.856600'), findsOneWidget);
-      expect(find.textContaining('2.352200'), findsOneWidget);
+    expect(find.textContaining('48.856600'), findsOneWidget);
+    expect(find.textContaining('2.352200'), findsOneWidget);
 
-      await tester.enterText(find.byType(TextFormField).at(0), 'Terrain GPS');
-      await tester.enterText(find.byType(TextFormField).at(1), '2');
-      await tester.tap(find.text('Ajouter le terrain'));
-      await tester.pump();
+    await tester.enterText(find.byType(TextFormField).at(0), 'GPS Court');
+    await tester.enterText(find.byType(TextFormField).at(1), '2');
+    await tester.tap(find.text('Add court'));
+    await tester.pump();
 
-      expect(repository.addCourtCallCount, 1);
-      expect(repository.lastAddedCourt?.latitude, closeTo(48.8566, 0.0001));
-    },
-  );
+    expect(repository.addCourtCallCount, 1);
+    expect(repository.lastAddedCourt?.latitude, closeTo(48.8566, 0.0001));
+  });
 
   testWidgets(
     'manual coordinate entry is collapsed by default, and still validates '
@@ -221,29 +217,26 @@ void main() {
     (tester) async {
       final repository = await _pumpAddCourtPage(tester);
 
-      expect(find.text('Saisir les coordonnées'), findsOneWidget);
+      expect(find.text('Enter coordinates'), findsOneWidget);
       final tile = tester.widget<ExpansionTile>(find.byType(ExpansionTile));
       expect(tile.initiallyExpanded, false);
 
-      await tester.tap(find.text('Saisir les coordonnées'));
+      await tester.tap(find.text('Enter coordinates'));
       await tester.pump();
 
       expect(find.text('Latitude'), findsOneWidget);
       expect(find.text('Longitude'), findsOneWidget);
 
-      await tester.enterText(
-        find.byType(TextFormField).at(0),
-        'Terrain Manuel',
-      );
+      await tester.enterText(find.byType(TextFormField).at(0), 'Manual Court');
       await tester.enterText(find.byType(TextFormField).at(1), '2');
       // Latitude out of range: submission must be blocked.
       await tester.enterText(find.byType(TextFormField).at(2), '120');
       await tester.enterText(find.byType(TextFormField).at(3), '2.3522');
 
-      await tester.tap(find.text('Ajouter le terrain'));
+      await tester.tap(find.text('Add court'));
       await tester.pump();
 
-      expect(find.text('Entre -90 et 90'), findsOneWidget);
+      expect(find.text('Between -90 and 90'), findsOneWidget);
       expect(repository.addCourtCallCount, 0);
     },
   );
@@ -255,7 +248,7 @@ void main() {
       await _pumpAddCourtPage(tester, locationService: delayedLocationService);
 
       final buttonBefore = tester.widget<ElevatedButton>(
-        find.widgetWithText(ElevatedButton, 'Ajouter le terrain'),
+        find.widgetWithText(ElevatedButton, 'Add court'),
       );
       expect(buttonBefore.onPressed, isNull);
 
@@ -266,7 +259,7 @@ void main() {
       await tester.pump();
 
       final buttonAfter = tester.widget<ElevatedButton>(
-        find.widgetWithText(ElevatedButton, 'Ajouter le terrain'),
+        find.widgetWithText(ElevatedButton, 'Add court'),
       );
       expect(buttonAfter.onPressed, isNotNull);
     },

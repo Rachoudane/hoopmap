@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../l10n/app_strings.dart';
 import '../../router/routes.dart';
 import '../../theme/app_spacing.dart';
 import '../onboarding_providers.dart';
@@ -21,26 +22,18 @@ class _OnboardingSlide {
 const List<_OnboardingSlide> _slides = [
   _OnboardingSlide(
     icon: Icons.sports_basketball,
-    title: 'Trouvez un terrain, où que vous soyez',
-    description:
-        "Hoopmap repère les terrains de basket autour de vous et les "
-        'affiche en liste ou sur une carte, triés par distance.',
+    title: AppStrings.onboardingSlide1Title,
+    description: AppStrings.onboardingSlide1Description,
   ),
   _OnboardingSlide(
     icon: Icons.public,
-    title: 'Des données ouvertes et communautaires',
-    description:
-        "Les terrains viennent d'OpenStreetMap, complétés par les "
-        "contributions d'autres utilisateurs de Hoopmap qui ajoutent les "
-        'terrains manquants.',
+    title: AppStrings.onboardingSlide2Title,
+    description: AppStrings.onboardingSlide2Description,
   ),
   _OnboardingSlide(
     icon: Icons.my_location,
-    title: 'Votre position, uniquement pour ça',
-    description:
-        "À l'étape suivante, Android va vous demander l'autorisation "
-        "d'accéder à votre position. Elle sert uniquement à afficher les "
-        'terrains proches de vous.',
+    title: AppStrings.onboardingSlide3Title,
+    description: AppStrings.onboardingSlide3Description,
   ),
 ];
 
@@ -96,7 +89,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                 child: TextButton(
                   onPressed: _isLastPage ? null : _finish,
                   child: Text(
-                    'Passer',
+                    AppStrings.onboardingSkip,
                     style: TextStyle(
                       color: _isLastPage
                           ? Colors.transparent
@@ -177,7 +170,11 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
               padding: const EdgeInsets.all(AppSpacing.xl),
               child: ElevatedButton(
                 onPressed: _next,
-                child: Text(_isLastPage ? 'Commencer' : 'Suivant'),
+                child: Text(
+                  _isLastPage
+                      ? AppStrings.onboardingGetStarted
+                      : AppStrings.onboardingNext,
+                ),
               ),
             ),
           ],
