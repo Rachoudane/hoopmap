@@ -1,0 +1,9 @@
+{
+  "name": "hoopmap-tool",
+  "private": true,
+  "type": "module",
+  "description": "Node-side admin scripts for Hoopmap (not part of the Flutter app).",
+  "dependencies": {
+    "firebase-admin": "^13.0.0"
+  }
+}

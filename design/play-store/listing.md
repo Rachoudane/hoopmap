@@ -69,9 +69,36 @@ pickup game tonight, Hoopmap points you to the nearest one.
 
 ## Contact details
 
-- **Email**: `[TODO: support/contact email address]`
+- **Email**: `rachoucorporation@gmail.com`
 - **Website**: none published yet — leave blank or link the rachoucorp.app
   site once the privacy policy page is live there (see below).
+
+## Content moderation (Google Play's user-generated content requirement)
+
+Hoopmap carries user-generated content (submitted court names, hoop
+counts, and locations), so it ships the three things Google Play requires
+for that:
+
+1. **Terms of Use**, distinct from the Privacy Policy, that a user must
+   accept before their first court submission — see
+   `design/play-store/terms-of-use.md` (source) and the in-app "Terms of
+   Use" screen (reachable from the courts list app bar at any time, and
+   shown as a mandatory acceptance gate the first time someone taps "Add
+   a court"). They define prohibited content (illegal, hateful, sexual,
+   harassing, spam, fabricated/nonexistent courts) and reserve Rachou
+   Corp's right to remove content and restrict a contributor.
+2. **An in-app reporting flow**: every user-submitted court (never an
+   OpenStreetMap-sourced one) has a visible "Report this court" action —
+   a reason (inaccurate, offensive, spam, doesn't exist, other) plus an
+   optional comment, written to a dedicated `reports` Firestore
+   collection that the app itself can never read back (see
+   `firestore.rules`), so reports can't be seen or tampered with by any
+   user, including the reporter.
+3. **Effective moderation**: `tool/moderate.mjs`, an Admin-SDK script run
+   by the Rachou Corp team, lists pending reports, shows the reported
+   court alongside the report, and lets a moderator remove the court and
+   close the report. Documented in `docs/moderation.md`, with a
+   24–48 hour response commitment on every pending report.
 
 ## Content rating
 
@@ -109,8 +136,8 @@ template.
 |---|---|---|---|---|
 | Approximate location | Yes | No | App functionality | Used to center the initial court search and, if precise location is unavailable, as a fallback. |
 | Precise location | Yes | No | App functionality | Used to find and sort nearby courts, and to prefill the add-court map with your current position. Requested via Android's runtime location permission; declining it disables location-dependent screens but doesn't crash the app. |
-| App activity — other user-generated content | Yes | No | App functionality | Courts you submit (name, hoop count, indoor/outdoor, coordinates) are stored in Firestore and become visible to every user — that visibility is the feature, not a side effect. |
-| Device or other identifiers | Yes | No | App functionality, account management | An anonymous Firebase Authentication ID is created automatically on first launch (no email, phone number, or name is ever collected) and is attached to courts you submit, so the backend can attribute a submission to a session without identifying you personally. |
+| App activity — other user-generated content | Yes | No | App functionality | Courts you submit (name, hoop count, indoor/outdoor, coordinates) are stored in Firestore and become visible to every user — that visibility is the feature, not a side effect. If you use "Report this court," the reason, optional comment, and your anonymous ID are stored in a separate, non-public `reports` collection that no user (including the reporter) can read back — see `firestore.rules` and `docs/moderation.md`. |
+| Device or other identifiers | Yes | No | App functionality, account management | An anonymous Firebase Authentication ID is created automatically on first launch (no email, phone number, or name is ever collected) and is attached to courts you submit (and to any report you file), so the backend can attribute a submission or report to a session without identifying you personally. |
 
 **Data NOT collected**: name, email address, phone number, physical
 address, photos or videos you take, contacts, financial or health info,
@@ -125,9 +152,10 @@ HTTPS.
 Partially: the app has no account or edit/delete UI for submitted courts
 (matching `firestore.rules`, which forbids updates and deletes entirely —
 see `docs/architecture.md`'s "Known limitations"). A user who wants a court
-they submitted removed must contact `[TODO: support/contact email address]`
-with enough detail (court name and approximate location) to identify it;
-removal is a manual, backend-side operation, not self-service in-app.
+they submitted removed must contact `rachoucorporation@gmail.com`, or use
+the in-app "Report this court" action, with enough detail (court name and
+approximate location) to identify it; removal is a manual, backend-side
+operation (see `docs/moderation.md`), not self-service in-app.
 
 ## Location permission declaration (Play Console → App content → Permissions)
 
@@ -160,4 +188,13 @@ where "nearby" means.
 - **Privacy policy**: content is in `design/play-store/privacy-policy.md`;
   publish it as an actual page in the rachoucorp.app site repo and link
   that URL in the Play Console (Google requires a reachable HTTPS URL, not
-  a Markdown file in this repo).
+  a Markdown file in this repo). It changed with this release (new
+  "Reports you file" section, contact email filled in) — the published
+  page needs to be regenerated from the current content.
+- **Terms of use**: content is in `design/play-store/terms-of-use.md`, a
+  new document as of this release. It also needs a published HTTPS page
+  on rachoucorp.app (it doesn't exist there yet — this is a new page, not
+  a regeneration) and, in the Play Console, belongs in the app's website
+  field or wherever the store listing exposes a Terms of Use link; the
+  in-app copy at `TermsOfUsePage` is the same content and doesn't depend
+  on this page being live, but Play's UGC policy expects a public URL too.

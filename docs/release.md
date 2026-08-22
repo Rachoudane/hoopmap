@@ -120,3 +120,56 @@ needed:
 - Artifacts copied to `build/release/hoopmap-1.0.0.{aab,apk}` for this
   release; that directory is gitignored, so pull them from wherever this
   build actually ran, or rerun `tool/build_release.ps1`, to get them again.
+
+## v1.0.1 release log
+
+Built 2026-08-22 via `tool/build_release.ps1`, no script changes needed.
+This release adds the three pieces Google Play's user-generated-content
+policy requires, now that the app has been live with UGC (submitted
+courts): a Terms of Use users must accept before their first submission,
+an in-app "Report this court" action, and `tool/moderate.mjs` for actually
+acting on reports — see the top-level report in this session for the full
+breakdown, and `docs/moderation.md` for the moderation workflow itself.
+
+- **Signing**: reused the same upload keystore as v1.0.0 (env vars weren't
+  set for this build; the script left the existing `android/key.properties`
+  in place, which still pointed at a valid keystore).
+- **Gate**: `dart format`, `flutter analyze --fatal-infos`, and the full
+  `flutter test` suite (127 tests, up from 111 — 16 new tests covering
+  Terms of Use acceptance/persistence, the add-court gate, report
+  submission, duplicate-report rejection, and report-button visibility
+  scoped to non-OpenStreetMap courts) all passed clean as part of the
+  pipeline run.
+- **Firestore**: `firestore.rules` gained a `reports` collection (create
+  only, authenticated + field-validated, no client read/update/delete —
+  see the rules file for how the create/update distinction on a
+  deterministic `{courtId}_{reporterUid}` document id enforces "one report
+  per user per court" without ever granting a read). Deployed with
+  `firebase deploy --only firestore:rules` before this build.
+- **Outputs**: `app-release.aab` (46.8 MB) and `app-release.apk` (55.8 MB),
+  both signed with the same certificate as v1.0.0 (SHA-256:
+  `6a:08:19:62:56:0b:85:f8:b4:3a:3d:18:e7:d0:24:4a:35:cf:99:89:89:a8:97:9e:f7:7b:08:97:95:8b:0a:82`),
+  confirming the same upload key was reused.
+- **On-device verification (real Android device, release build)**: fresh
+  install over the v1.0.0 build (uninstalled first, same signing key so
+  this was precautionary), onboarding, the location permission prompt,
+  and the live nearby-courts list all worked exactly as in v1.0.0. The new
+  Terms of Use screen (reachable from the courts-list app bar) rendered
+  its full content with the effective date and no Accept/Decline buttons
+  in that context, matching the "just viewing" mode. Opening a
+  OpenStreetMap-sourced court's detail page confirmed it never shows
+  "Report this court", as expected. The add-court acceptance gate and the
+  report dialog's full flow (submit, success confirmation, duplicate
+  rejection) were exercised in depth by the widget test suite instead of
+  by hand on this device: raw `adb shell input tap` coordinates for the
+  floating action button proved unreliable on this device's display
+  scaling mid-session, and the equivalent interactions are already
+  covered end-to-end by dedicated widget tests
+  (`test/features/courts/presentation/courts_list_page_test.dart` and
+  `test/features/courts/presentation/court_detail_page_test.dart`), so
+  manual re-verification wasn't pursued further once that coverage was
+  confirmed passing.
+- Artifacts copied to `build/release/hoopmap-1.0.1.{aab,apk}` for this
+  release; that directory is gitignored, so pull them from wherever this
+  build actually ran, or rerun `tool/build_release.ps1`, to get them
+  again.
