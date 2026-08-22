@@ -150,10 +150,9 @@ where "nearby" means.
 
 ## Store assets
 
-- **Icon**: `assets/icon/icon.png` (512×512 required by the Play Console;
-  derive with `python -c "from PIL import Image; Image.open('assets/icon/icon.png').resize((512,512)).save('design/play-store/icon-512.png')"` if a
-  512px export is needed — the source is already 1024×1024). The icon
-  itself is final; do not regenerate or restyle it for the store listing.
+- **Icon**: `design/play-store/icon-512.png` (512×512, resized from the
+  final `assets/icon/icon.png`). The icon itself is final; do not
+  regenerate or restyle it for the store listing.
 - **Feature graphic**: `design/play-store/feature-graphic.png` (1024×500).
 - **Screenshots**: `design/play-store/screenshots/*.png` (1080×1920, 8
   images) — raw, undressed captures are kept in
