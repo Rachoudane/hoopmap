@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../data/commons_attribution.dart';
 import '../../data/commons_urls.dart';
@@ -71,10 +72,10 @@ class CourtPhoto extends ConsumerWidget {
             if (showAttribution) ...[
               const SizedBox(height: AppSpacing.xs),
               Text(
-                attribution.licenseShortName != null
-                    ? 'Photo : ${attribution.author} · Wikimedia Commons '
-                          '(${attribution.licenseShortName})'
-                    : 'Photo : ${attribution.author} · Wikimedia Commons',
+                AppStrings.photoAttribution(
+                  attribution.author,
+                  attribution.licenseShortName,
+                ),
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ],

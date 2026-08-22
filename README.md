@@ -1,51 +1,51 @@
 # Hoopmap
 
-Application Flutter qui aide à trouver des terrains de basket où que l'on soit dans le monde, en combinant les données OpenStreetMap et les terrains ajoutés par les utilisateurs.
+A Flutter app that helps you find basketball courts wherever you are in the world, combining OpenStreetMap data with courts added by users.
 
 [![CI](https://github.com/Rachoudane/hoopmap/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Rachoudane/hoopmap/actions/workflows/ci.yml)
 
-## Ce que fait l'app
+## What the app does
 
-- Un onboarding de trois écrans au premier lancement (à quoi sert l'app, d'où viennent les données, pourquoi la position est demandée), qui ne réapparaît plus ensuite.
-- Localise l'utilisateur et affiche les terrains de basket à proximité, triés par distance, sous forme de liste ou de carte — accessibles via une navigation par onglets en bas d'écran.
-- Recherche les terrains OpenStreetMap à la volée dans la zone géographique concernée plutôt que dans une base préchargée, pour fonctionner n'importe où dans le monde.
-- Fusionne ces résultats avec les terrains ajoutés par les utilisateurs, stockés dans Firestore.
-- Affiche une fiche par terrain (nom, nombre de paniers, intérieur/extérieur, coordonnées), accessible aussi par deep link, avec sa photo quand une source Wikimedia Commons exploitable existe (voir [Photos des terrains](#photos-des-terrains)).
-- Propose un bouton "Itinéraire" qui ouvre l'application de cartographie du téléphone sur les coordonnées du terrain.
-- Permet d'ajouter un terrain (nom, nombre de paniers, intérieur/extérieur, position choisie sur une carte ou au GPS) via un formulaire, après une authentification anonyme automatique.
-- Chaque état réseau (hors-ligne, service Overpass indisponible ou limité, aucun terrain trouvé, terrain introuvable) affiche un écran dédié avec un message compréhensible, jamais une exception brute.
+- A three-screen onboarding on first launch (what the app is for, where the data comes from, why location is requested), never shown again afterwards.
+- Locates the user and shows nearby basketball courts, sorted by distance, as a list or on a map — reachable through a bottom tab navigation bar.
+- Searches OpenStreetMap courts on the fly in the relevant geographic area rather than from a preloaded database, so it works anywhere in the world.
+- Merges those results with courts added by users, stored in Firestore.
+- Shows a detail page per court (name, hoop count, indoor/outdoor, coordinates), also reachable by deep link, with its photo when a usable Wikimedia Commons source exists (see [Court photos](#court-photos)).
+- Offers a "Directions" button that opens the phone's map application on the court's coordinates.
+- Lets users add a court (name, hoop count, indoor/outdoor, position chosen on a map or from GPS) via a form, after automatic anonymous authentication.
+- Every network state (offline, Overpass service unavailable or rate-limited, no courts found, court not found) shows a dedicated screen with an understandable message, never a raw exception.
 
-## Sources de données
+## Data sources
 
-Les terrains affichés viennent de deux sources distinctes, interrogées puis fusionnées par un repository composite :
+The courts shown come from two distinct sources, queried and then merged by a composite repository:
 
-- **OpenStreetMap, via l'API Overpass** : à chaque recherche, l'app interroge `https://overpass-api.de/api/interpreter` pour les éléments `leisure=pitch` avec un tag `sport` contenant `basketball`, dans une boîte englobante calculée autour du point de recherche. Rien n'est préchargé ni mis en cache : comme la couverture est mondiale, stocker ou embarquer l'ensemble des terrains OpenStreetMap n'est pas envisageable, donc chaque zone consultée déclenche sa propre requête.
-- **Firestore** : uniquement les terrains ajoutés par les utilisateurs depuis l'app. La recherche s'y fait par une requête de plage sur la latitude, puis un filtre sur la longitude côté client.
+- **OpenStreetMap, via the Overpass API**: on every search, the app queries `https://overpass-api.de/api/interpreter` for `leisure=pitch` elements with a `sport` tag containing `basketball`, within a bounding box computed around the search point. Nothing is preloaded or cached: since coverage is worldwide, storing or bundling the entire OpenStreetMap court dataset isn't feasible, so every area viewed triggers its own query.
+- **Firestore**: only courts added by users from the app. Search there is done with a range query on latitude, followed by a client-side filter on longitude.
 
-Le repository composite fusionne les deux listes en dédupliquant par identifiant, et continue de fonctionner si une seule des deux sources répond.
+The composite repository merges both lists, deduplicating by identifier, and keeps working if only one of the two sources responds.
 
 ## Stack
 
 - Flutter / Dart
-- Riverpod (`flutter_riverpod`) pour la gestion d'état et l'injection de dépendances
-- GoRouter (`go_router`) pour la navigation, les deep links et la navigation par onglets (`StatefulShellRoute.indexedStack`)
-- Firebase : `firebase_core`, `cloud_firestore` (terrains ajoutés par les utilisateurs), `firebase_auth` (authentification anonyme)
-- `http` pour interroger l'API Overpass
-- `geolocator` pour la position de l'utilisateur
-- `flutter_map` + `latlong2` pour l'affichage cartographique (tuiles OpenStreetMap)
-- `url_launcher` pour ouvrir l'application de cartographie du téléphone
-- `shared_preferences` pour mémoriser que l'onboarding a été vu
-- `cached_network_image` pour la photo d'un terrain (mise en cache disque, chargement paresseux)
-- `flutter_launcher_icons` et `flutter_native_splash` (dev only) pour décliner l'icône et l'écran de démarrage générés par `tool/generate_brand_assets.py`
-- Tests : `flutter_test`, `fake_cloud_firestore`, et des faux clients HTTP / repositories écrits à la main
+- Riverpod (`flutter_riverpod`) for state management and dependency injection
+- GoRouter (`go_router`) for navigation, deep links, and tab navigation (`StatefulShellRoute.indexedStack`)
+- Firebase: `firebase_core`, `cloud_firestore` (courts added by users), `firebase_auth` (anonymous authentication)
+- `http` to query the Overpass API
+- `geolocator` for the user's location
+- `flutter_map` + `latlong2` for map rendering (OpenStreetMap tiles)
+- `url_launcher` to open the phone's map application
+- `shared_preferences` to remember that onboarding has been seen
+- `cached_network_image` for a court's photo (disk caching, lazy loading)
+- `flutter_launcher_icons` and `flutter_native_splash` (dev only) to generate the icon and splash screen from the assets produced by `tool/generate_brand_assets.py`
+- Tests: `flutter_test`, `fake_cloud_firestore`, and hand-written fake HTTP clients / repositories
 
-## Photos des terrains
+## Court photos
 
-Quand un élément OpenStreetMap porte un tag `wikimedia_commons` (`File:...`) ou un tag `image` pointant vers Wikimedia Commons, `Court.imageUrl` est renseigné et la photo est affichée dans la fiche terrain et en vignette dans la liste (voir `lib/features/courts/data/commons_urls.dart` et `commons_attribution.dart`). Toute autre URL d'`image` OSM est ignorée volontairement : Commons est la seule source pour laquelle l'app peut récupérer un auteur et une licence de façon fiable (`commonsAttributionProvider`, API Commons `imageinfo`/`extmetadata`), condition légale à l'affichage d'une photo sous licence. Tant que cette attribution n'est pas résolue avec un auteur exploitable, le visuel de repli de la charte s'affiche à la place de la photo.
+When an OpenStreetMap element carries a `wikimedia_commons` tag (`File:...`) or an `image` tag pointing to Wikimedia Commons, `Court.imageUrl` is populated and the photo is shown on the court detail page and as a thumbnail in the list (see `lib/features/courts/data/commons_urls.dart` and `commons_attribution.dart`). Any other OSM `image` URL is deliberately ignored: Commons is the only source the app can reliably resolve an author and license for (`commonsAttributionProvider`, Commons `imageinfo`/`extmetadata` API), a legal requirement for displaying a licensed photo. Until that attribution resolves with a usable author, the brand's fallback visual is shown instead of the photo.
 
-## Identité visuelle
+## Visual identity
 
-Le système de design (palette asphalte/orange ballon, typographie Oswald + Inter, espacements/rayons/élévations) vit dans `lib/core/theme/` et suit le thème clair/sombre du système. Les polices sont embarquées dans `assets/fonts/` (aucun téléchargement au démarrage). L'icône et l'écran de démarrage sont générés par un script Python (`tool/generate_brand_assets.py`, nécessite Pillow) puis déclinés avec `flutter_launcher_icons` et `flutter_native_splash` :
+The design system (asphalt/basketball-orange palette, Oswald + Inter typography, spacing/radii/elevations) lives in `lib/core/theme/` and follows the system's light/dark theme. Fonts are bundled in `assets/fonts/` (no download at startup). The icon and splash screen are generated by a Python script (`tool/generate_brand_assets.py`, requires Pillow) and then produced with `flutter_launcher_icons` and `flutter_native_splash`:
 
 ```bash
 python tool/generate_brand_assets.py
@@ -53,14 +53,14 @@ dart run flutter_launcher_icons
 dart run flutter_native_splash:create
 ```
 
-## Démarrer
+## Getting started
 
-Prérequis :
+Prerequisites:
 
-- Flutter (channel stable ; la CI utilise la version définie dans `.github/workflows/ci.yml`)
-- Un projet Firebase avec Firestore et l'authentification anonyme activée, et votre propre fichier `lib/firebase_options.dart` généré pour ce projet (celui du dépôt pointe vers le projet Firebase original et ne fonctionnera pas pour un autre compte) — générez le vôtre avec la CLI FlutterFire, pointée vers votre projet
+- Flutter (stable channel; CI uses the version defined in `.github/workflows/ci.yml`)
+- A Firebase project with Firestore and anonymous authentication enabled, and your own `lib/firebase_options.dart` generated for that project (the one in this repo points to the original Firebase project and won't work for another account) — generate yours with the FlutterFire CLI, pointed at your project
 
-Commandes :
+Commands:
 
 ```bash
 flutter pub get
@@ -70,15 +70,15 @@ flutter test
 
 ## Deep links
 
-Une fiche terrain est accessible via le lien `hoopmap://courts/<id>`, où `<id>` est soit un identifiant OpenStreetMap (`osm:<type>-<id>`), soit l'identifiant d'un document Firestore. Pour l'ouvrir sur un appareil ou un émulateur Android connecté :
+A court's detail page is reachable via the `hoopmap://courts/<id>` link, where `<id>` is either an OpenStreetMap identifier (`osm:<type>-<id>`) or a Firestore document identifier. To open it on a connected Android device or emulator:
 
 ```bash
 adb shell am start -a android.intent.action.VIEW -d "hoopmap://courts/osm:way-123456"
 ```
 
-## Sécurité Firestore
+## Firestore security
 
-Les règles (`firestore.rules`, déclarées dans `firebase.json`) autorisent la lecture publique de la collection `courts`, et la création uniquement pour un utilisateur authentifié soumettant un document valide (nom de 3 à 60 caractères, 1 à 20 paniers, latitude/longitude dans leurs bornes, `createdBy` égal à son propre uid, `createdAt` résolu côté serveur). La modification et la suppression sont interdites. Pour redéployer les règles après modification :
+The rules (`firestore.rules`, declared in `firebase.json`) allow public read access to the `courts` collection, and creation only for an authenticated user submitting a valid document (name 3 to 60 characters, 1 to 20 hoops, latitude/longitude within bounds, `createdBy` equal to their own uid, `createdAt` resolved server-side). Updates and deletes are forbidden. To redeploy the rules after a change:
 
 ```bash
 firebase deploy --only firestore:rules
@@ -86,16 +86,16 @@ firebase deploy --only firestore:rules
 
 ## Attribution
 
-- Les données des terrains OpenStreetMap ainsi que les tuiles de la carte proviennent d'OpenStreetMap : © les contributeurs d'OpenStreetMap, disponibles sous licence ODbL (https://www.openstreetmap.org/copyright).
-- Les requêtes de recherche de terrains sont envoyées à l'API Overpass (service communautaire de l'infrastructure OpenStreetMap) avec un User-Agent identifiant l'application et une limite de taille de zone interrogée, conformément à sa politique d'usage.
+- OpenStreetMap court data and map tiles come from OpenStreetMap: © OpenStreetMap contributors, available under the ODbL license (https://www.openstreetmap.org/copyright).
+- Court search queries are sent to the Overpass API (a community service of the OpenStreetMap infrastructure) with a User-Agent identifying the app and a bound on the queried area size, in line with its usage policy.
 
 ## Architecture
 
-Le détail de l'architecture (couches, pattern repository, stratégie de test, limites connues) est documenté dans [docs/architecture.md](docs/architecture.md).
+The architecture in detail (layers, repository pattern, test strategy, known limitations) is documented in [docs/architecture.md](docs/architecture.md).
 
-## Publier une release
+## Publishing a release
 
-Prérequis, variables d'environnement et procédure complète (y compris la génération du keystore) dans [docs/release.md](docs/release.md). En résumé :
+Prerequisites, environment variables, and the full procedure (including keystore generation) are in [docs/release.md](docs/release.md). In short:
 
 ```powershell
 .\tool\build_release.ps1

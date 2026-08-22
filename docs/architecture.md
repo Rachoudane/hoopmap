@@ -1,70 +1,70 @@
 # Architecture
 
-Ce document décrit l'organisation du code de Hoopmap telle qu'elle existe aujourd'hui, la raison d'être de ses principales abstractions, la stratégie de test, et les limites connues du projet.
+This document describes the organization of Hoopmap's code as it stands today, the reasoning behind its main abstractions, the test strategy, and the project's known limitations.
 
-## Couches et règle de dépendance
+## Layers and dependency rule
 
-Le code de la feature `courts` (`lib/features/courts/`) est organisé en trois couches, avec une règle de dépendance à sens unique : `presentation` dépend de `data` et `domain`, `data` dépend de `domain`, et `domain` ne dépend de rien d'autre dans le projet.
+The `courts` feature's code (`lib/features/courts/`) is organized into three layers, with a one-way dependency rule: `presentation` depends on `data` and `domain`, `data` depends on `domain`, and `domain` depends on nothing else in the project.
 
-- **`domain/`** : les types métier (`Court`, `CourtWithDistance`, `GeoBounds`), les fonctions pures (`distance.dart`), et l'interface abstraite `CourtRepository` (avec l'exception `CourtNotFoundException`). Aucun fichier de ce dossier n'importe Flutter, `http` ou `cloud_firestore`.
-- **`data/`** : les implémentations concrètes de `CourtRepository` — `OverpassCourtRepository` (HTTP vers l'API Overpass), `FirestoreCourtRepository` (Firestore), `CompositeCourtRepository` (combine les deux) — ainsi que leurs mappers (`overpass_mapper.dart`, `court_mapper.dart`) et le câblage Riverpod (`court_repository_provider.dart`).
-- **`presentation/`** : les notifiers/providers Riverpod qui exposent l'état à l'UI (`NearbyCourtsNotifier`, `courtDetailProvider`, `AddCourtController`) et les pages (`pages/`).
+- **`domain/`**: business types (`Court`, `CourtWithDistance`, `GeoBounds`), pure functions (`distance.dart`), and the abstract `CourtRepository` interface (with the `CourtNotFoundException` exception). No file in this folder imports Flutter, `http`, or `cloud_firestore`.
+- **`data/`**: concrete implementations of `CourtRepository` — `OverpassCourtRepository` (HTTP to the Overpass API), `FirestoreCourtRepository` (Firestore), `CompositeCourtRepository` (combines both) — along with their mappers (`overpass_mapper.dart`, `court_mapper.dart`) and Riverpod wiring (`court_repository_provider.dart`).
+- **`presentation/`**: the Riverpod notifiers/providers that expose state to the UI (`NearbyCourtsNotifier`, `courtDetailProvider`, `AddCourtController`) and the pages (`pages/`).
 
-`lib/core/` regroupe les préoccupations transverses utilisées par plusieurs features : l'authentification (`core/auth/auth_providers.dart`), l'accès à Firebase (`core/firebase/firebase_providers.dart`), la géolocalisation (`core/location/`, avec l'interface `LocationService` et son implémentation `GeolocatorLocationService`), le routeur (`core/router/`), l'onboarding (`core/onboarding/`) et le système de design (`core/theme/`).
+`lib/core/` holds cross-cutting concerns used by several features: authentication (`core/auth/auth_providers.dart`), Firebase access (`core/firebase/firebase_providers.dart`), geolocation (`core/location/`, with the `LocationService` interface and its `GeolocatorLocationService` implementation), the router (`core/router/`), onboarding (`core/onboarding/`), and the design system (`core/theme/`).
 
 ## Navigation
 
-Le routeur (`core/router/app_router.dart`) a deux particularités :
+The router (`core/router/app_router.dart`) has two notable features:
 
-- **Portail d'onboarding** : sa fonction `redirect` lit `onboardingCompletedProvider` (synchrone, adossé à `shared_preferences`) et renvoie systématiquement vers `/onboarding` tant qu'il n'a pas été complété, quelle que soit la route demandée.
-- **Navigation par onglets** : Liste et Carte sont les deux branches d'un `StatefulShellRoute.indexedStack` (chacune garde sa pile de navigation et sa position de défilement en changeant d'onglet), affichées dans `AppShell` avec une `NavigationBar`. La fiche terrain et le formulaire d'ajout sont des routes de haut niveau, ouvertes par `push` (jamais `go`) pour toujours laisser un onglet sous-jacent dans la pile.
+- **Onboarding gate**: its `redirect` function reads `onboardingCompletedProvider` (synchronous, backed by `shared_preferences`) and always redirects to `/onboarding` until it's been completed, whatever route was requested.
+- **Tab navigation**: List and Map are the two branches of a `StatefulShellRoute.indexedStack` (each keeps its own navigation stack and scroll position when switching tabs), shown in `AppShell` with a `NavigationBar`. The court detail page and the add-court form are top-level routes, opened with `push` (never `go`) so there's always an underlying tab left in the stack.
 
-Comme une fiche terrain peut aussi être ouverte directement par un deep link à froid (sans pile de navigation existante), `core/router/back_to_home_scope.dart` intercepte le retour (bouton ou geste système) via `PopScope` : s'il y a quelque chose à dépiler, il dépile normalement ; sinon, il navigue explicitement vers l'accueil.
+Since a court detail page can also be opened directly by a cold deep link (with no existing navigation stack), `core/router/back_to_home_scope.dart` intercepts back navigation (button or system gesture) via `PopScope`: if there's something to pop, it pops normally; otherwise, it navigates explicitly to home.
 
-## Gestion des erreurs
+## Error handling
 
-Aucune page n'affiche un type d'exception brut. `features/courts/presentation/court_error_messages.dart` traduit chaque exception métier (échec Overpass, limitation de débit 429, permission ou service de localisation refusé/désactivé, terrain introuvable) en un message français actionnable, affiché par `AppErrorView`/`AppEmptyView` (`core/presentation/widgets/`) avec un bouton Réessayer qui invalide le provider concerné.
+No page ever shows a raw exception type. `features/courts/presentation/court_error_messages.dart` translates every business exception (Overpass failure, 429 rate limiting, denied/disabled location permission or service, court not found) into an actionable English message, shown by `AppErrorView`/`AppEmptyView` (`core/presentation/widgets/`) with a Retry button that invalidates the relevant provider.
 
-## Photos des terrains et attribution Wikimedia Commons
+## Court photos and Wikimedia Commons attribution
 
-`Court.imageUrl` (optionnel) n'est jamais alimenté à partir d'une URL `image=*` OSM arbitraire : `data/commons_urls.dart` ne résout que les références qui pointent vers Wikimedia Commons (tag `wikimedia_commons` au format `File:...`, ou une URL `image`/Firestore déjà hébergée sur Commons), et renvoie `null` sinon. C'est une contrainte légale, pas seulement technique — c'est la seule source pour laquelle `data/commons_attribution.dart` peut interroger l'API Commons (`imageinfo`/`extmetadata`) et obtenir un auteur. Le widget `CourtPhoto` (`presentation/widgets/`) n'affiche la photo qu'une fois cette attribution résolue avec un auteur non vide ; en cas d'échec, d'absence d'auteur, ou pendant la résolution, il affiche le visuel de repli de la charte à la place — jamais la photo sans attribution, jamais une zone vide.
+`Court.imageUrl` (optional) is never populated from an arbitrary OSM `image=*` URL: `data/commons_urls.dart` only resolves references that point to Wikimedia Commons (a `wikimedia_commons` tag in `File:...` format, or an `image`/Firestore URL already hosted on Commons), and returns `null` otherwise. This is a legal constraint, not just a technical one — Commons is the only source `data/commons_attribution.dart` can query the Commons API (`imageinfo`/`extmetadata`) against to obtain an author. The `CourtPhoto` widget (`presentation/widgets/`) only shows the photo once that attribution resolves with a non-empty author; on failure, when there's no author, or while resolution is pending, it shows the brand's fallback visual instead — never the photo without attribution, never an empty area.
 
-## Sélection de la position à l'ajout d'un terrain
+## Position selection when adding a court
 
-`AddCourtPage` garde une seule source de vérité pour la position (les contrôleurs de texte latitude/longitude), alimentée par trois voies équivalentes : la carte (`LocationPickerMap`, réticule fixe au centre, `onPositionChanged` du `FlutterMap` sous-jacent), le bouton "Ma position actuelle" (`LocationService`), et la saisie manuelle (repliée dans un `ExpansionTile` avec `maintainState: true`, pour que ses validateurs restent actifs même replié). Le bouton d'envoi reste désactivé tant qu'aucune position initiale n'est connue.
+`AddCourtPage` keeps a single source of truth for the position (the latitude/longitude text controllers), fed by three equivalent paths: the map (`LocationPickerMap`, a reticle fixed at its center, `onPositionChanged` from the underlying `FlutterMap`), the "My current location" button (`LocationService`), and manual entry (collapsed inside an `ExpansionTile` with `maintainState: true`, so its validators stay active even while collapsed). The submit button stays disabled until an initial position is known.
 
-## Le pattern repository et le repository composite
+## The repository pattern and the composite repository
 
-`CourtRepository` est l'unique abstraction que voit la couche `presentation` : `watchCourtsInBounds(GeoBounds)`, `watchCourt(String id)` et `addCourt(Court court)`. Trois classes l'implémentent :
+`CourtRepository` is the only abstraction the `presentation` layer sees: `watchCourtsInBounds(GeoBounds)`, `watchCourt(String id)`, and `addCourt(Court court)`. Three classes implement it:
 
-- `OverpassCourtRepository` traduit ces appels en requêtes vers l'API Overpass et lève `UnsupportedError` sur `addCourt` (on n'écrit pas dans OpenStreetMap).
-- `FirestoreCourtRepository` lit et écrit dans la collection Firestore `courts`.
-- `CompositeCourtRepository` reçoit une `List<CourtRepository>` (Overpass puis Firestore, câblés dans `court_repository_provider.dart`) et implémente elle-même `CourtRepository` :
-  - `watchCourtsInBounds` et `watchCourt` interrogent toutes les sources en parallèle, fusionnent les résultats (dédupliqués par identifiant) et tolèrent qu'une source échoue tant qu'au moins une répond ;
-  - `addCourt` délègue à la première source dont l'appel ne lève pas `UnsupportedError` — en pratique, Firestore.
+- `OverpassCourtRepository` translates those calls into Overpass API requests and throws `UnsupportedError` on `addCourt` (the app doesn't write to OpenStreetMap).
+- `FirestoreCourtRepository` reads and writes the Firestore `courts` collection.
+- `CompositeCourtRepository` receives a `List<CourtRepository>` (Overpass then Firestore, wired in `court_repository_provider.dart`) and itself implements `CourtRepository`:
+  - `watchCourtsInBounds` and `watchCourt` query all sources in parallel, merge the results (deduplicated by identifier), and tolerate one source failing as long as at least one responds;
+  - `addCourt` delegates to the first source whose call doesn't throw `UnsupportedError` — in practice, Firestore.
 
-Grâce à cette composition, la couche `presentation` (et les tests) ne manipulent qu'un seul type, `CourtRepository`, sans jamais savoir si une donnée vient d'OpenStreetMap ou de Firestore.
+Thanks to this composition, the `presentation` layer (and the tests) only ever handle a single type, `CourtRepository`, without ever knowing whether a given piece of data came from OpenStreetMap or Firestore.
 
-## Pourquoi des interfaces de domaine
+## Why domain interfaces
 
-`CourtRepository` (Firestore, Overpass) et `LocationService` (géolocalisation) sont toutes deux définies comme des interfaces abstraites dans le domaine/core, avec une seule implémentation concrète adossée au SDK réel (`cloud_firestore`/`http`, `geolocator`). Cela sert deux objectifs :
+`CourtRepository` (Firestore, Overpass) and `LocationService` (geolocation) are both defined as abstract interfaces in the domain/core, with a single concrete implementation backed by the real SDK (`cloud_firestore`/`http`, `geolocator`). This serves two purposes:
 
-1. La couche `presentation` dépend d'une abstraction stable, pas d'un SDK tiers — remplacer ou faire évoluer une source de données n'impacte pas les notifiers ni les pages.
-2. Les tests peuvent substituer une implémentation entièrement contrôlée (un faux `CourtRepository`, un faux `LocationService`) sans jamais toucher un SDK réel, ce qui rend possible la stratégie de test décrite ci-dessous.
+1. The `presentation` layer depends on a stable abstraction, not a third-party SDK — replacing or evolving a data source doesn't affect the notifiers or the pages.
+2. Tests can substitute a fully controlled implementation (a fake `CourtRepository`, a fake `LocationService`) without ever touching a real SDK, which is what makes the test strategy below possible.
 
-## Stratégie de test
+## Test strategy
 
-Aucun test du projet n'effectue d'appel réseau ou d'appel Firebase réel :
+No test in the project makes a real network call or a real Firebase call:
 
-- **`OverpassCourtRepository`** est testé avec un faux `http.Client` écrit à la main (une classe qui étend `http.BaseClient` et redéfinit `send()` pour retourner une réponse simulée).
-- **`CompositeCourtRepository`**, **`NearbyCourtsNotifier`**, **`courtDetailProvider`** et **`AddCourtController`** sont testés avec de faux `CourtRepository` (et, pour la géolocalisation, un faux `LocationService`) écrits à la main dans chaque fichier de test.
-- **`FirestoreCourtRepository`** est testé avec `FakeFirebaseFirestore`, du package `fake_cloud_firestore` : une implémentation en mémoire de `cloud_firestore`, pas une instance réelle.
-- **`FirebaseAuth`** n'est jamais invoqué réellement dans les tests : `anonymousSessionProvider` est surchargé au niveau du `ProviderContainer`, et `FirestoreCourtRepository` accepte un paramètre optionnel `currentUserId` pour injecter l'identifiant utilisateur sans passer par `FirebaseAuth.instance`.
-- **`SharedPreferences`** utilise `SharedPreferences.setMockInitialValues(...)` (une implémentation en mémoire fournie par le package) avant `sharedPreferencesProvider.overrideWithValue(...)`, jamais le stockage réel de l'appareil.
+- **`OverpassCourtRepository`** is tested with a hand-written fake `http.Client` (a class that extends `http.BaseClient` and overrides `send()` to return a simulated response).
+- **`CompositeCourtRepository`**, **`NearbyCourtsNotifier`**, **`courtDetailProvider`**, and **`AddCourtController`** are tested with hand-written fake `CourtRepository` implementations (and, for geolocation, a fake `LocationService`), written in each test file.
+- **`FirestoreCourtRepository`** is tested with `FakeFirebaseFirestore`, from the `fake_cloud_firestore` package: an in-memory implementation of `cloud_firestore`, not a real instance.
+- **`FirebaseAuth`** is never invoked for real in tests: `anonymousSessionProvider` is overridden at the `ProviderContainer` level, and `FirestoreCourtRepository` accepts an optional `currentUserId` parameter to inject the user identifier without going through `FirebaseAuth.instance`.
+- **`SharedPreferences`** uses `SharedPreferences.setMockInitialValues(...)` (an in-memory implementation provided by the package) before `sharedPreferencesProvider.overrideWithValue(...)`, never the device's real storage.
 
-## Limites connues
+## Known limitations
 
-- **Dépendance à Overpass** : l'app s'appuie entièrement sur l'instance publique `overpass-api.de` et sa politique d'usage (délai de 30 s, taille de zone interrogée plafonnée). Si ce service est indisponible, lent ou limite les requêtes, la recherche de terrains OpenStreetMap échoue, sans repli sur une autre instance.
-- **Pas de cache disque** : chaque recherche relance une requête Overpass et une requête Firestore ; aucune réponse n'est persistée localement d'une session à l'autre.
-- **Rayon de recherche fixe** : `NearbyCourtsNotifier` interroge toujours un rayon de 5 000 mètres autour de la position de l'utilisateur ; ce rayon n'est ni configurable par l'utilisateur, ni ajusté selon la densité de terrains.
-- **Pas de modération** : `AddCourtController` écrit directement dans Firestore dès que le formulaire est valide. Rien ne filtre, ne signale ni ne vérifie une contribution avant qu'elle soit visible par tous les utilisateurs.
+- **Dependency on Overpass**: the app relies entirely on the public `overpass-api.de` instance and its usage policy (30 s timeout, capped queried-area size). If that service is unavailable, slow, or rate-limits requests, searching OpenStreetMap courts fails, with no fallback to another instance.
+- **No disk cache**: every search re-triggers an Overpass request and a Firestore request; no response is persisted locally between sessions.
+- **Fixed search radius**: `NearbyCourtsNotifier` always queries a 5,000-meter radius around the user's position; this radius is neither configurable by the user nor adjusted for court density.
+- **No moderation**: `AddCourtController` writes directly to Firestore as soon as the form is valid. Nothing filters, flags, or verifies a submission before it's visible to every user.

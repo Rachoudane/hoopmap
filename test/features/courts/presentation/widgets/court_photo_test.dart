@@ -118,7 +118,7 @@ void main() {
       expect(find.byKey(_fallbackKey), findsNothing);
       expect(find.byType(CachedNetworkImage), findsOneWidget);
       expect(
-        find.text('Photo : Jane Doe · Wikimedia Commons (CC BY-SA 4.0)'),
+        find.text('Photo: Jane Doe · Wikimedia Commons (CC BY-SA 4.0)'),
         findsOneWidget,
       );
     },

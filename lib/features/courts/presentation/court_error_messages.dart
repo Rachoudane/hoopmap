@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n/app_strings.dart';
 import '../../../core/location/location_service.dart';
 import '../data/overpass_court_repository.dart';
 import '../domain/court_repository.dart';
@@ -9,29 +10,24 @@ import '../domain/court_repository.dart';
 /// exception type or message.
 String courtErrorMessage(Object error) {
   if (error is LocationPermissionDeniedException) {
-    return "L'accès à votre position a été refusé. Autorisez-le dans les "
-        "paramètres de l'application pour voir les terrains proches de "
-        'vous.';
+    return AppStrings.errorLocationPermissionDenied;
   }
   if (error is LocationServiceDisabledException) {
-    return 'La localisation est désactivée sur cet appareil. Activez-la '
-        'pour voir les terrains proches de vous.';
+    return AppStrings.errorLocationServiceDisabled;
   }
   if (error is OverpassRateLimitedException) {
-    return 'Le service OpenStreetMap est très sollicité en ce moment. '
-        'Réessayez dans quelques instants.';
+    return AppStrings.errorOverpassRateLimited;
   }
   if (error is AreaTooLargeException) {
-    return 'La zone à explorer est trop grande pour être interrogée.';
+    return AppStrings.errorAreaTooLarge;
   }
   if (error is OverpassException) {
-    return 'Impossible de contacter OpenStreetMap. Vérifiez votre connexion '
-        'et réessayez.';
+    return AppStrings.errorOverpass;
   }
   if (error is CourtNotFoundException) {
-    return "Ce terrain est introuvable. Il a peut-être été supprimé.";
+    return AppStrings.errorCourtNotFound;
   }
-  return 'Une erreur inattendue est survenue. Réessayez.';
+  return AppStrings.errorUnexpected;
 }
 
 /// An icon matching [courtErrorMessage]'s cause, so a location-permission

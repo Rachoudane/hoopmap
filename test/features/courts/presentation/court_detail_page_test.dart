@@ -12,7 +12,7 @@ const _courtId = 'court-a';
 
 Court _court() => Court(
   id: _courtId,
-  name: 'Terrain Central',
+  name: 'Court Central',
   latitude: 48.8566,
   longitude: 2.3522,
   hoopCount: 4,
@@ -57,9 +57,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Terrain Central'), findsOneWidget);
-    expect(find.text('4 paniers'), findsOneWidget);
-    expect(find.text('Terrain extérieur'), findsOneWidget);
+    expect(find.text('Court Central'), findsOneWidget);
+    expect(find.text('4 hoops'), findsOneWidget);
+    expect(find.text('Outdoor court'), findsOneWidget);
   });
 
   testWidgets('displays an error message instead of an empty screen', (
@@ -80,12 +80,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(
-      find.text('Une erreur inattendue est survenue. Réessayez.'),
-      findsOneWidget,
-    );
-    expect(find.text('Réessayer'), findsOneWidget);
-    expect(find.text('Terrain Central'), findsNothing);
+    expect(find.text('Something went wrong. Try again.'), findsOneWidget);
+    expect(find.text('Retry'), findsOneWidget);
+    expect(find.text('Court Central'), findsNothing);
   });
 
   testWidgets('a CourtNotFoundException shows a dedicated not-found screen', (
@@ -106,7 +103,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Terrain introuvable'), findsOneWidget);
-    expect(find.text('Retour à la liste'), findsOneWidget);
+    expect(find.text('Court not found'), findsOneWidget);
+    expect(find.text('Back to list'), findsOneWidget);
   });
 }

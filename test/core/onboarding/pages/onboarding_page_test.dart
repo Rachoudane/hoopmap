@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hoopmap/core/l10n/app_strings.dart';
 import 'package:hoopmap/core/onboarding/onboarding_providers.dart';
 import 'package:hoopmap/core/onboarding/pages/onboarding_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -51,35 +52,35 @@ void main() {
     addTearDown(container.dispose);
     await _pumpOnboarding(tester, container);
 
-    expect(find.text('Trouvez un terrain, où que vous soyez'), findsOneWidget);
+    expect(find.text(AppStrings.onboardingSlide1Title), findsOneWidget);
     expect(container.read(onboardingCompletedProvider), false);
 
-    await tester.tap(find.text('Passer'));
+    await tester.tap(find.text(AppStrings.onboardingSkip));
     await tester.pumpAndSettle();
 
     expect(container.read(onboardingCompletedProvider), true);
     expect(find.text('Home'), findsOneWidget);
   });
 
-  testWidgets('Suivant advances through all three slides then completes', (
+  testWidgets('Next advances through all three slides then completes', (
     tester,
   ) async {
     final container = await _containerWithPrefs();
     addTearDown(container.dispose);
     await _pumpOnboarding(tester, container);
 
-    expect(find.text('Trouvez un terrain, où que vous soyez'), findsOneWidget);
+    expect(find.text(AppStrings.onboardingSlide1Title), findsOneWidget);
 
-    await tester.tap(find.text('Suivant'));
+    await tester.tap(find.text(AppStrings.onboardingNext));
     await tester.pumpAndSettle();
-    expect(find.text('Des données ouvertes et communautaires'), findsOneWidget);
+    expect(find.text(AppStrings.onboardingSlide2Title), findsOneWidget);
 
-    await tester.tap(find.text('Suivant'));
+    await tester.tap(find.text(AppStrings.onboardingNext));
     await tester.pumpAndSettle();
-    expect(find.text('Votre position, uniquement pour ça'), findsOneWidget);
-    expect(find.text('Commencer'), findsOneWidget);
+    expect(find.text(AppStrings.onboardingSlide3Title), findsOneWidget);
+    expect(find.text(AppStrings.onboardingGetStarted), findsOneWidget);
 
-    await tester.tap(find.text('Commencer'));
+    await tester.tap(find.text(AppStrings.onboardingGetStarted));
     await tester.pumpAndSettle();
 
     expect(container.read(onboardingCompletedProvider), true);

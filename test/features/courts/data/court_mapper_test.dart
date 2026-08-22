@@ -10,7 +10,7 @@ void main() {
       final firestore = FakeFirebaseFirestore();
       final createdAt = DateTime(2026, 1, 15, 10, 30);
       await firestore.collection('courts').doc('court-1').set({
-        'name': 'Terrain Central',
+        'name': 'Court Central',
         'location': const GeoPoint(48.8566, 2.3522),
         'hoopCount': 4,
         'isOutdoor': true,
@@ -28,7 +28,7 @@ void main() {
         court,
         Court(
           id: 'court-1',
-          name: 'Terrain Central',
+          name: 'Court Central',
           latitude: 48.8566,
           longitude: 2.3522,
           hoopCount: 4,
@@ -43,7 +43,7 @@ void main() {
       () async {
         final firestore = FakeFirebaseFirestore();
         await firestore.collection('courts').doc('court-1').set({
-          'name': 'Terrain Central',
+          'name': 'Court Central',
           'location': const GeoPoint(48.8566, 2.3522),
           'hoopCount': 4,
           'isOutdoor': true,
@@ -71,7 +71,7 @@ void main() {
       () async {
         final firestore = FakeFirebaseFirestore();
         await firestore.collection('courts').doc('court-1').set({
-          'name': 'Terrain Central',
+          'name': 'Court Central',
           'location': const GeoPoint(48.8566, 2.3522),
           'hoopCount': 4,
           'isOutdoor': true,
@@ -115,7 +115,7 @@ void main() {
       () async {
         final firestore = FakeFirebaseFirestore();
         await firestore.collection('courts').doc('court-1').set({
-          'name': 'Terrain Central',
+          'name': 'Court Central',
           'location': 'not-a-geopoint',
           'hoopCount': 4,
           'isOutdoor': true,

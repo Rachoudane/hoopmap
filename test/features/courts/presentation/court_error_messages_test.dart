@@ -10,26 +10,29 @@ void main() {
     test('gives a specific message for a denied location permission', () {
       expect(
         courtErrorMessage(const LocationPermissionDeniedException()),
-        contains('position'),
+        contains('Location access was denied'),
       );
     });
 
     test('gives a specific message for a disabled location service', () {
       expect(
         courtErrorMessage(const LocationServiceDisabledException()),
-        contains('désactivée'),
+        contains('turned off'),
       );
     });
 
     test('gives a specific message for an Overpass rate limit', () {
       expect(
         courtErrorMessage(OverpassRateLimitedException()),
-        contains('sollicité'),
+        contains('heavy load'),
       );
     });
 
     test('gives a specific message for an area that is too large', () {
-      expect(courtErrorMessage(AreaTooLargeException(30)), contains('grande'));
+      expect(
+        courtErrorMessage(AreaTooLargeException(30)),
+        contains('too large'),
+      );
     });
 
     test('gives a specific message for a generic Overpass failure', () {
@@ -42,14 +45,14 @@ void main() {
     test('gives a specific message for a missing court', () {
       expect(
         courtErrorMessage(CourtNotFoundException('court-1')),
-        contains('introuvable'),
+        contains("can't be found"),
       );
     });
 
     test('falls back to a generic message for an unrecognized error', () {
       expect(
         courtErrorMessage(Exception('anything else')),
-        'Une erreur inattendue est survenue. Réessayez.',
+        'Something went wrong. Try again.',
       );
     });
   });

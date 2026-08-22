@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/location/location_providers.dart';
 import '../../../../core/router/back_to_home_scope.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -100,7 +101,7 @@ class _AddCourtPageState extends ConsumerState<AddCourtPage> {
     final messenger = ScaffoldMessenger.of(context);
     context.pop();
     messenger.showSnackBar(
-      const SnackBar(content: Text('Terrain ajouté avec succès')),
+      const SnackBar(content: Text(AppStrings.courtAddedSnackBar)),
     );
   }
 
@@ -113,7 +114,7 @@ class _AddCourtPageState extends ConsumerState<AddCourtPage> {
 
     return BackToHomeScope(
       child: Scaffold(
-        appBar: AppBar(title: const Text('Ajouter un terrain')),
+        appBar: AppBar(title: const Text(AppStrings.addCourtTitle)),
         // Top is already clear of the status bar via the AppBar; without
         // this, the submit button (last in the list) can end up partly
         // behind the system navigation bar on devices with 3-button nav.
@@ -124,19 +125,22 @@ class _AddCourtPageState extends ConsumerState<AddCourtPage> {
             child: ListView(
               padding: const EdgeInsets.all(AppSpacing.lg),
               children: [
-                Text('Informations', style: textTheme.titleMedium),
+                Text(
+                  AppStrings.informationSectionTitle,
+                  style: textTheme.titleMedium,
+                ),
                 const SizedBox(height: AppSpacing.md),
                 TextFormField(
                   controller: _nameController,
                   decoration: const InputDecoration(
-                    labelText: 'Nom du terrain',
-                    hintText: 'Ex. City Stade Voltaire',
+                    labelText: AppStrings.courtNameLabel,
+                    hintText: AppStrings.courtNameHint,
                   ),
                   textCapitalization: TextCapitalization.sentences,
                   validator: (value) {
                     final length = value?.trim().length ?? 0;
                     if (length < 3 || length > 60) {
-                      return 'Le nom doit contenir entre 3 et 60 caractères';
+                      return AppStrings.courtNameValidation;
                     }
                     return null;
                   },
@@ -145,13 +149,13 @@ class _AddCourtPageState extends ConsumerState<AddCourtPage> {
                 TextFormField(
                   controller: _hoopCountController,
                   decoration: const InputDecoration(
-                    labelText: 'Nombre de paniers',
+                    labelText: AppStrings.hoopCountLabel,
                   ),
                   keyboardType: TextInputType.number,
                   validator: (value) {
                     final parsed = int.tryParse(value?.trim() ?? '');
                     if (parsed == null || parsed < 1 || parsed > 20) {
-                      return 'Entre 1 et 20 paniers';
+                      return AppStrings.hoopCountValidation;
                     }
                     return null;
                   },
@@ -159,11 +163,11 @@ class _AddCourtPageState extends ConsumerState<AddCourtPage> {
                 const SizedBox(height: AppSpacing.sm),
                 Card(
                   child: SwitchListTile(
-                    title: const Text('Terrain extérieur'),
+                    title: const Text(AppStrings.outdoorCourt),
                     subtitle: Text(
                       _isOutdoor
-                          ? 'Le terrain est en extérieur'
-                          : 'Le terrain est en intérieur',
+                          ? AppStrings.outdoorSubtitle
+                          : AppStrings.indoorSubtitle,
                       style: textTheme.bodySmall,
                     ),
                     value: _isOutdoor,
@@ -171,12 +175,12 @@ class _AddCourtPageState extends ConsumerState<AddCourtPage> {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xl),
-                Text('Position', style: textTheme.titleMedium),
-                const SizedBox(height: AppSpacing.xs),
                 Text(
-                  'Déplacez la carte pour placer le repère sur le terrain.',
-                  style: textTheme.bodySmall,
+                  AppStrings.locationSectionTitle,
+                  style: textTheme.titleMedium,
                 ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(AppStrings.locationHelperText, style: textTheme.bodySmall),
                 const SizedBox(height: AppSpacing.md),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -203,9 +207,11 @@ class _AddCourtPageState extends ConsumerState<AddCourtPage> {
                     Expanded(
                       child: Text(
                         _latitudeController.text.isEmpty
-                            ? 'Position à choisir'
-                            : 'Position choisie : ${_latitudeController.text}, '
-                                  '${_longitudeController.text}',
+                            ? AppStrings.locationToChoose
+                            : AppStrings.locationChosen(
+                                _latitudeController.text,
+                                _longitudeController.text,
+                              ),
                         style: textTheme.bodySmall?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),
@@ -222,7 +228,7 @@ class _AddCourtPageState extends ConsumerState<AddCourtPage> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.my_location, size: 18),
-                      label: const Text('Ma position actuelle'),
+                      label: const Text(AppStrings.useCurrentLocation),
                     ),
                   ],
                 ),
@@ -238,7 +244,7 @@ class _AddCourtPageState extends ConsumerState<AddCourtPage> {
                     // once.
                     maintainState: true,
                     tilePadding: EdgeInsets.zero,
-                    title: const Text('Saisir les coordonnées'),
+                    title: const Text(AppStrings.enterCoordinates),
                     childrenPadding: const EdgeInsets.only(
                       top: AppSpacing.sm,
                       bottom: AppSpacing.sm,
@@ -250,7 +256,7 @@ class _AddCourtPageState extends ConsumerState<AddCourtPage> {
                             child: TextFormField(
                               controller: _latitudeController,
                               decoration: const InputDecoration(
-                                labelText: 'Latitude',
+                                labelText: AppStrings.latitudeLabel,
                               ),
                               keyboardType:
                                   const TextInputType.numberWithOptions(
@@ -264,7 +270,7 @@ class _AddCourtPageState extends ConsumerState<AddCourtPage> {
                                 if (parsed == null ||
                                     parsed < -90 ||
                                     parsed > 90) {
-                                  return 'Entre -90 et 90';
+                                  return AppStrings.latitudeValidation;
                                 }
                                 return null;
                               },
@@ -275,7 +281,7 @@ class _AddCourtPageState extends ConsumerState<AddCourtPage> {
                             child: TextFormField(
                               controller: _longitudeController,
                               decoration: const InputDecoration(
-                                labelText: 'Longitude',
+                                labelText: AppStrings.longitudeLabel,
                               ),
                               keyboardType:
                                   const TextInputType.numberWithOptions(
@@ -289,7 +295,7 @@ class _AddCourtPageState extends ConsumerState<AddCourtPage> {
                                 if (parsed == null ||
                                     parsed < -180 ||
                                     parsed > 180) {
-                                  return 'Entre -180 et 180';
+                                  return AppStrings.longitudeValidation;
                                 }
                                 return null;
                               },
@@ -338,7 +344,7 @@ class _AddCourtPageState extends ConsumerState<AddCourtPage> {
                             color: Colors.white,
                           ),
                         )
-                      : const Text('Ajouter le terrain'),
+                      : const Text(AppStrings.submitAddCourt),
                 ),
               ],
             ),

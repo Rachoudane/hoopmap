@@ -256,11 +256,11 @@ def concept_top_down_hoop() -> Image.Image:
 
 
 CONCEPTS: dict[str, tuple[str, Callable[[], Image.Image]]] = {
-    "1_front_hoop": ("Panier vu de face", concept_front_hoop),
-    "2_stylized_net": ("Filet stylisé", concept_stylized_net),
-    "3_pin_ball": ("Marqueur de carte + ballon", concept_pin_ball),
-    "4_abstract_geometric": ("Forme géométrique abstraite", concept_abstract_geometric),
-    "5_top_down_hoop": ("Arceau vu de dessus", concept_top_down_hoop),
+    "1_front_hoop": ("Hoop seen from the front", concept_front_hoop),
+    "2_stylized_net": ("Stylized net", concept_stylized_net),
+    "3_pin_ball": ("Map marker + ball", concept_pin_ball),
+    "4_abstract_geometric": ("Abstract geometric shape", concept_abstract_geometric),
+    "5_top_down_hoop": ("Rim seen from above", concept_top_down_hoop),
 }
 
 

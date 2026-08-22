@@ -29,15 +29,15 @@ void main() {
     (tester) async {
       final courts = [
         CourtWithDistance(
-          court: _court('court-a', 'Terrain A'),
+          court: _court('court-a', 'Court A'),
           distanceInMeters: 450,
         ),
         CourtWithDistance(
-          court: _court('court-b', 'Terrain B'),
+          court: _court('court-b', 'Court B'),
           distanceInMeters: 1200,
         ),
         CourtWithDistance(
-          court: _court('court-c', 'Terrain C'),
+          court: _court('court-c', 'Court C'),
           distanceInMeters: 2400,
         ),
       ];
@@ -55,28 +55,28 @@ void main() {
             // CourtDetailPage reads courtDetailProvider, which otherwise
             // hits the real courtRepositoryProvider chain (http + Firestore)
             // once the test taps through to it.
-            courtDetailProvider('court-a').overrideWith(
-              (ref) => Stream.value(_court('court-a', 'Terrain A')),
-            ),
+            courtDetailProvider(
+              'court-a',
+            ).overrideWith((ref) => Stream.value(_court('court-a', 'Court A'))),
           ],
           child: const HoopmapApp(),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Terrain A'), findsOneWidget);
-      expect(find.text('Terrain B'), findsOneWidget);
-      expect(find.text('Terrain C'), findsOneWidget);
+      expect(find.text('Court A'), findsOneWidget);
+      expect(find.text('Court B'), findsOneWidget);
+      expect(find.text('Court C'), findsOneWidget);
       expect(find.text('450 m'), findsOneWidget);
-      expect(find.text('1,2 km'), findsOneWidget);
+      expect(find.text('1.2 km'), findsOneWidget);
 
-      final positionA = tester.getCenter(find.text('Terrain A')).dy;
-      final positionB = tester.getCenter(find.text('Terrain B')).dy;
-      final positionC = tester.getCenter(find.text('Terrain C')).dy;
+      final positionA = tester.getCenter(find.text('Court A')).dy;
+      final positionB = tester.getCenter(find.text('Court B')).dy;
+      final positionC = tester.getCenter(find.text('Court C')).dy;
       expect(positionA, lessThan(positionB));
       expect(positionB, lessThan(positionC));
 
-      await tester.tap(find.text('Terrain A'));
+      await tester.tap(find.text('Court A'));
       await tester.pumpAndSettle();
 
       final detailPage = tester.widget<CourtDetailPage>(
@@ -122,9 +122,9 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Aucun terrain à proximité'), findsOneWidget);
+    expect(find.text('No courts nearby'), findsOneWidget);
 
-    await tester.tap(find.text('Actualiser'));
+    await tester.tap(find.text('Refresh'));
     await tester.pump();
 
     expect(invalidated, true);
@@ -145,10 +145,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(
-      find.text('Une erreur inattendue est survenue. Réessayez.'),
-      findsOneWidget,
-    );
-    expect(find.text('Réessayer'), findsOneWidget);
+    expect(find.text('Something went wrong. Try again.'), findsOneWidget);
+    expect(find.text('Retry'), findsOneWidget);
   });
 }

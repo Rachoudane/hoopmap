@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/presentation/widgets/app_message_view.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/router/routes.dart';
@@ -18,10 +19,10 @@ class CourtsListPage extends ConsumerWidget {
     final courtsAsync = ref.watch(nearbyCourtsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Terrains à proximité')),
+      appBar: AppBar(title: const Text(AppStrings.courtsListTitle)),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.pushNamed(Routes.addCourtName),
-        tooltip: 'Ajouter un terrain',
+        tooltip: AppStrings.addCourtTooltip,
         child: const Icon(Icons.add),
       ),
       body: courtsAsync.when(
@@ -35,11 +36,9 @@ class CourtsListPage extends ConsumerWidget {
           if (courts.isEmpty) {
             return AppEmptyView(
               icon: Icons.sports_basketball_outlined,
-              title: 'Aucun terrain à proximité',
-              message:
-                  "Aucun terrain n'a été trouvé dans un rayon de 5 km. "
-                  'Vous pouvez en ajouter un vous-même.',
-              actionLabel: 'Actualiser',
+              title: AppStrings.noCourtsNearbyTitle,
+              message: AppStrings.noCourtsNearbyListMessage,
+              actionLabel: AppStrings.refresh,
               onAction: () => ref.invalidate(nearbyCourtsProvider),
             );
           }

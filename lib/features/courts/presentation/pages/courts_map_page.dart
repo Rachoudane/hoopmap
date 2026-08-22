@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/location/location_providers.dart';
 import '../../../../core/presentation/widgets/app_message_view.dart';
 import '../../../../core/router/routes.dart';
@@ -42,7 +43,7 @@ class _CourtsMapPageState extends ConsumerState<CourtsMapPage> {
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Impossible d'accéder à votre position.")),
+        const SnackBar(content: Text(AppStrings.locationUnavailableSnackBar)),
       );
     } finally {
       if (mounted) setState(() => _recentering = false);
@@ -54,7 +55,7 @@ class _CourtsMapPageState extends ConsumerState<CourtsMapPage> {
     final courtsAsync = ref.watch(nearbyCourtsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Carte')),
+      appBar: AppBar(title: const Text(AppStrings.mapTitle)),
       body: courtsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stackTrace) => AppErrorView(
@@ -66,11 +67,9 @@ class _CourtsMapPageState extends ConsumerState<CourtsMapPage> {
           if (courts.isEmpty) {
             return AppEmptyView(
               icon: Icons.map_outlined,
-              title: 'Aucun terrain à proximité',
-              message:
-                  "Aucun terrain n'a été trouvé dans un rayon de 5 km "
-                  'autour de vous.',
-              actionLabel: 'Actualiser',
+              title: AppStrings.noCourtsNearbyTitle,
+              message: AppStrings.noCourtsNearbyMapMessage,
+              actionLabel: AppStrings.refresh,
               onAction: () => ref.invalidate(nearbyCourtsProvider),
             );
           }
@@ -121,7 +120,7 @@ class _CourtsMapPageState extends ConsumerState<CourtsMapPage> {
                     // 'flutter_map | © ' before source, so source itself
                     // must not repeat the © symbol.
                     child: SimpleAttributionWidget(
-                      source: Text("les contributeurs d'OpenStreetMap"),
+                      source: Text(AppStrings.openStreetMapContributors),
                     ),
                   ),
                 ],
@@ -134,7 +133,7 @@ class _CourtsMapPageState extends ConsumerState<CourtsMapPage> {
                 child: FloatingActionButton(
                   heroTag: 'recenter',
                   onPressed: _recentering ? null : _recenterOnUser,
-                  tooltip: 'Recentrer sur ma position',
+                  tooltip: AppStrings.recenterOnMyLocation,
                   child: _recentering
                       ? const SizedBox(
                           width: 20,

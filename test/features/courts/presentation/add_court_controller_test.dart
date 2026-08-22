@@ -64,7 +64,7 @@ void main() {
       await container
           .read(addCourtControllerProvider.notifier)
           .submit(
-            name: 'Terrain Test',
+            name: 'Test Court',
             hoopCount: 4,
             isOutdoor: true,
             latitude: 48.8566,
@@ -72,7 +72,7 @@ void main() {
           );
 
       expect(repository.addCourtCallCount, 1);
-      expect(repository.lastAddedCourt?.name, 'Terrain Test');
+      expect(repository.lastAddedCourt?.name, 'Test Court');
       expect(states.any((s) => s.isLoading), true);
       expect(
         container.read(addCourtControllerProvider),
@@ -88,7 +88,7 @@ void main() {
       await container
           .read(addCourtControllerProvider.notifier)
           .submit(
-            name: 'Terrain Test',
+            name: 'Test Court',
             hoopCount: 4,
             isOutdoor: true,
             latitude: 48.8566,

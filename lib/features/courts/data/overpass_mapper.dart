@@ -16,7 +16,7 @@ Court? courtFromOverpassElement(Map<String, dynamic> element) {
 
   return Court(
     id: 'osm:$type-$id',
-    name: (tags['name'] as String?) ?? 'Terrain de basket',
+    name: (tags['name'] as String?) ?? 'Basketball court',
     latitude: coordinates.$1,
     longitude: coordinates.$2,
     hoopCount: _hoopCountOf(tags),
