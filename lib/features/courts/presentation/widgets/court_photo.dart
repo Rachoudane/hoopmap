@@ -51,22 +51,29 @@ class CourtPhoto extends ConsumerWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ClipRRect(
-              borderRadius: borderRadius,
-              child: CachedNetworkImage(
-                imageUrl: url,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => ColoredBox(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  child: const Center(
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+            // Expanded so the image yields its share of height to the
+            // attribution text below rather than both being squeezed into
+            // the fixed height the caller gives this whole column.
+            Expanded(
+              child: ClipRRect(
+                borderRadius: borderRadius,
+                child: CachedNetworkImage(
+                  imageUrl: url,
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) => ColoredBox(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
+                    child: const Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
                     ),
                   ),
+                  errorWidget: (context, url, error) => fallback,
                 ),
-                errorWidget: (context, url, error) => fallback,
               ),
             ),
             if (showAttribution) ...[
