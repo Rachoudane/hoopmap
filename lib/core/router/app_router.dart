@@ -9,6 +9,7 @@ import '../onboarding/onboarding_providers.dart';
 import '../onboarding/pages/onboarding_page.dart';
 import '../presentation/pages/app_shell.dart';
 import '../presentation/pages/not_found_page.dart';
+import '../terms/pages/terms_of_use_page.dart';
 import 'routes.dart';
 
 final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((ref) {
@@ -79,6 +80,17 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((ref) {
         path: Routes.addCourt,
         name: Routes.addCourtName,
         builder: (context, state) => const AddCourtPage(),
+      ),
+      GoRoute(
+        path: Routes.terms,
+        name: Routes.termsName,
+        builder: (context, state) => const TermsOfUsePage(),
+      ),
+      GoRoute(
+        path: Routes.termsAccept,
+        name: Routes.termsAcceptName,
+        builder: (context, state) =>
+            const TermsOfUsePage(requireAcceptance: true),
       ),
     ],
     errorBuilder: (context, state) => const NotFoundPage(),

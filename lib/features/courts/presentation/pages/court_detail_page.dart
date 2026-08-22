@@ -8,6 +8,7 @@ import '../../../../core/presentation/widgets/app_message_view.dart';
 import '../../../../core/router/back_to_home_scope.dart';
 import '../../../../core/router/routes.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../reports/presentation/widgets/report_court_dialog.dart';
 import '../../domain/court.dart';
 import '../../domain/court_repository.dart';
 import '../court_detail_provider.dart';
@@ -175,6 +176,18 @@ class _CourtDetailBody extends StatelessWidget {
                       label: const Text(AppStrings.directions),
                     ),
                   ),
+                  if (!isFromOpenStreetMap) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () =>
+                            showReportCourtDialog(context, court.id),
+                        icon: const Icon(Icons.flag_outlined),
+                        label: const Text(AppStrings.reportThisCourt),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: AppSpacing.xl),
                   Row(
                     children: [

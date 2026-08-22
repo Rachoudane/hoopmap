@@ -11,6 +11,21 @@ service cloud.firestore {
       allow create: if request.auth != null && isValidNewCourt(request.resource.data);
       allow update, delete: if false;
     }
+
+    // User reports against a court (features/reports). Never readable or
+    // editable by clients — moderation reads/writes happen exclusively
+    // through tool/moderate.mjs using the Admin SDK, which bypasses these
+    // rules entirely. Document ids are "{courtId}_{reporterUid}" (see
+    // FirestoreCourtReportRepository), so a second report from the same
+    // user for the same court targets an already-existing document: that
+    // request is evaluated as an update, not a create, and is rejected by
+    // `allow update: if false` below — this is how "one report per user
+    // per court" is enforced without ever granting a client a read.
+    match /reports/{reportId} {
+      allow read: if false;
+      allow create: if request.auth != null && isValidNewReport(request.resource.data);
+      allow update, delete: if false;
+    }
   }
 }
 
@@ -35,5 +50,21 @@ function isValidNewCourt(data) {
     && data.createdBy == request.auth.uid
     // Firestore resolves FieldValue.serverTimestamp() to request.time before
     // rules run, so this rejects any client-supplied createdAt value.
+    && data.createdAt == request.time;
+}
+
+function isValidNewReport(data) {
+  return data.keys().hasAll(
+      ['courtId', 'reason', 'reporterUid', 'status', 'createdAt']
+    )
+    && data.keys().hasOnly(
+      ['courtId', 'reason', 'comment', 'reporterUid', 'status', 'createdAt']
+    )
+    && data.courtId is string
+    && data.courtId.size() > 0
+    && data.reason in ['inaccurate', 'offensive', 'spam', 'doesNotExist', 'other']
+    && (!('comment' in data) || (data.comment is string && data.comment.size() <= 500))
+    && data.reporterUid == request.auth.uid
+    && data.status == 'pending'
     && data.createdAt == request.time;
 }

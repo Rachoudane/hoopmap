@@ -112,4 +112,32 @@ abstract final class AppStrings {
       licenseShortName != null
       ? 'Photo: $author · Wikimedia Commons ($licenseShortName)'
       : 'Photo: $author · Wikimedia Commons';
+
+  // Terms of Use
+  static const termsOfUseTooltip = 'Terms of Use';
+  static const termsOfUseTitle = 'Terms of Use';
+  static String termsOfUseEffectiveDate(String date) => 'Effective date: $date';
+  static const termsGateIntro =
+      'Please review and accept the Terms of Use before adding a court.';
+  static const termsAccept = 'Accept';
+  static const termsDecline = 'Decline';
+
+  // Report this court
+  static const reportThisCourt = 'Report this court';
+  static const reportDialogTitle = 'Report this court';
+  static const reportDialogDescription =
+      "Let us know what's wrong. Our team reviews reports and removes "
+      'content that violates the Terms of Use.';
+  static const reportReasonInaccurate = 'Inaccurate information';
+  static const reportReasonOffensive = 'Offensive content';
+  static const reportReasonSpam = 'Spam';
+  static const reportReasonDoesNotExist = "Court doesn't exist";
+  static const reportReasonOther = 'Other';
+  static const reportCommentLabel = 'Additional details (optional)';
+  static const reportSubmit = 'Submit report';
+  static const reportCancel = 'Cancel';
+  static const reportSuccessSnackBar =
+      "Thanks — your report was received and will be reviewed.";
+  static const reportAlreadySubmitted = "You've already reported this court.";
+  static const reportError = "Couldn't submit your report. Try again.";
 }

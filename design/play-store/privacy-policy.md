@@ -1,6 +1,6 @@
 # Hoopmap Privacy Policy
 
-**Effective date:** `[TODO: effective date]`
+**Effective date:** 2026-08-22
 
 This policy describes what data Hoopmap ("the app") collects, why, and how
 it's handled. It reflects the app's actual behavior as implemented — see
@@ -10,7 +10,7 @@ behind each point below.
 ## Who this app is from
 
 Hoopmap is developed by Rachou Corp. For any question about this policy or
-your data, contact `[TODO: contact email address]`.
+your data, contact `rachoucorporation@gmail.com`.
 
 ## What the app does
 
@@ -57,8 +57,24 @@ searching that area, exactly like the OpenStreetMap-sourced courts:
 
 Submitted courts cannot currently be edited or deleted through the app.
 If you want a court you submitted removed, contact
-`[TODO: contact email address]` with enough detail (name and approximate
+`rachoucorporation@gmail.com` with enough detail (name and approximate
 location) to identify it.
+
+### Reports you file
+
+Every user-submitted court (never one sourced from OpenStreetMap) has a
+"Report this court" action. If you use it, the app sends your anonymous
+identifier, a reason you choose (inaccurate, offensive, spam, doesn't
+exist, other), an optional free-text comment, and a server timestamp to a
+separate `reports` collection in the same database. This collection is
+not readable by any user through the app — not even by the person who
+filed the report or the person who submitted the court — so a report
+can't be seen, browsed, or tampered with by anyone using the app itself.
+Reports are reviewed by the Rachou Corp team using an internal tool (see
+`docs/moderation.md` in the source repository), typically within 24–48
+hours, and are used only to decide whether to remove the reported court;
+they are not shared with anyone outside Rachou Corp. You cannot report
+the same court more than once from the same anonymous identifier.
 
 ## Data we do NOT collect
 
@@ -93,7 +109,9 @@ Location data is not stored — it's used live for the request it was read
 for and discarded. Submitted courts and the anonymous identifier attached
 to them are retained indefinitely, since removing a public court entry
 without breaking the map for other users requires a deliberate action (see
-"Courts you submit" above), not automatic expiry.
+"Courts you submit" above), not automatic expiry. Reports are retained
+until reviewed and resolved (see "Reports you file" above); resolved
+reports are kept as an internal moderation record rather than deleted.
 
 ## Children's privacy
 
@@ -107,7 +125,7 @@ above (for example, under the EU/UK GDPR): to know what's held, to request
 its correction or deletion, or to object to its processing. Since the app
 has no account system, the only submitted-court data tied to your device is
 the anonymous identifier and the court entry itself — contact
-`[TODO: contact email address]` to exercise these rights, and provide
+`rachoucorporation@gmail.com` to exercise these rights, and provide
 enough detail about your submission (approximate court name/location and
 approximate submission date) for us to locate it, since there's no login to
 look it up by.

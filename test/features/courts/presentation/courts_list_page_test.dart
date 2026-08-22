@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoopmap/app.dart';
+import 'package:hoopmap/core/l10n/app_strings.dart';
+import 'package:hoopmap/core/location/location_providers.dart';
+import 'package:hoopmap/core/location/location_service.dart';
 import 'package:hoopmap/core/onboarding/onboarding_providers.dart';
 import 'package:hoopmap/features/courts/domain/court.dart';
 import 'package:hoopmap/features/courts/domain/court_with_distance.dart';
@@ -11,6 +14,12 @@ import 'package:hoopmap/features/courts/presentation/pages/court_detail_page.dar
 import 'package:hoopmap/features/courts/presentation/pages/courts_list_page.dart';
 import 'package:hoopmap/features/courts/presentation/widgets/court_list_skeleton.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+class _FakeLocationService implements LocationService {
+  @override
+  Future<UserPosition> currentPosition() async =>
+      const UserPosition(latitude: 48.8566, longitude: 2.3522);
+}
 
 Court _court(String id, String name) => Court(
   id: id,
@@ -148,4 +157,71 @@ void main() {
     expect(find.text('Something went wrong. Try again.'), findsOneWidget);
     expect(find.text('Retry'), findsOneWidget);
   });
+
+  testWidgets(
+    'tapping "Add a court" before accepting the Terms of Use shows the '
+    'acceptance gate, and accepting continues to the add-court form',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({'onboarding_completed': true});
+      final sharedPreferences = await SharedPreferences.getInstance();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+            nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
+              yield const [];
+            }),
+            locationServiceProvider.overrideWithValue(_FakeLocationService()),
+          ],
+          child: const HoopmapApp(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.add));
+      await tester.pumpAndSettle();
+
+      expect(find.text(AppStrings.termsGateIntro), findsOneWidget);
+      expect(find.text(AppStrings.addCourtTitle), findsNothing);
+
+      await tester.tap(find.text(AppStrings.termsAccept));
+      await tester.pumpAndSettle();
+
+      expect(find.text(AppStrings.termsGateIntro), findsNothing);
+      expect(find.text(AppStrings.addCourtTitle), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'tapping "Add a court" after the Terms of Use were already accepted '
+    'goes straight to the form',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({
+        'onboarding_completed': true,
+        'terms_of_use_accepted': true,
+      });
+      final sharedPreferences = await SharedPreferences.getInstance();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+            nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
+              yield const [];
+            }),
+            locationServiceProvider.overrideWithValue(_FakeLocationService()),
+          ],
+          child: const HoopmapApp(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.add));
+      await tester.pumpAndSettle();
+
+      expect(find.text(AppStrings.termsGateIntro), findsNothing);
+      expect(find.text(AppStrings.addCourtTitle), findsOneWidget);
+    },
+  );
 }

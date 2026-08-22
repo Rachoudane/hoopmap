@@ -1,0 +1,36 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../core/auth/auth_providers.dart';
+import '../data/court_report_repository_provider.dart';
+import '../domain/report_reason.dart';
+
+class ReportCourtController extends AsyncNotifier<void> {
+  @override
+  Future<void> build() async {}
+
+  Future<void> submit({
+    required String courtId,
+    required ReportReason reason,
+    String? comment,
+  }) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      // Ensure a uid exists before the repository reads it as reporterUid.
+      final reporterUid = await ref.read(anonymousSessionProvider.future);
+      await ref
+          .read(courtReportRepositoryProvider)
+          .reportCourt(
+            courtId: courtId,
+            reason: reason,
+            reporterUid: reporterUid,
+            comment: comment,
+          );
+    });
+  }
+}
+
+final AsyncNotifierProvider<ReportCourtController, void>
+reportCourtControllerProvider =
+    AsyncNotifierProvider<ReportCourtController, void>(
+      ReportCourtController.new,
+    );

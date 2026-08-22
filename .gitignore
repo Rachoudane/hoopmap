@@ -48,6 +48,9 @@ app.*.map.json
 tool/service-account.json
 *.serviceaccount.json
 
+# Node dependencies for tool/moderate.mjs (tool/package.json).
+tool/node_modules/
+
 # Android release signing (see docs/release.md): generated locally from
 # environment variables, never committed.
 android/key.properties
