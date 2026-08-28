@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoopmap/core/l10n/app_strings.dart';
+import 'package:hoopmap/core/location/location_providers.dart';
 import 'package:hoopmap/core/location/location_service.dart';
 import 'package:hoopmap/features/courts/domain/court.dart';
 import 'package:hoopmap/features/courts/domain/court_with_distance.dart';
@@ -10,15 +11,18 @@ import 'package:hoopmap/features/courts/presentation/nearby_courts_notifier.dart
 import 'package:hoopmap/features/courts/presentation/pages/courts_map_page.dart';
 import 'package:hoopmap/features/courts/presentation/widgets/court_marker.dart';
 
-Court _court(String id, String name) => Court(
-  id: id,
-  name: name,
-  latitude: 0,
-  longitude: 0,
-  hoopCount: 1,
-  isOutdoor: true,
-  createdAt: DateTime(2026, 1, 1),
-);
+Court _court(String id, String name) => _courtAt(id, name, 0, 0);
+
+Court _courtAt(String id, String name, double latitude, double longitude) =>
+    Court(
+      id: id,
+      name: name,
+      latitude: latitude,
+      longitude: longitude,
+      hoopCount: 1,
+      isOutdoor: true,
+      createdAt: DateTime(2026, 1, 1),
+    );
 
 void main() {
   testWidgets('displays a FlutterMap with one marker per court', (
@@ -152,6 +156,70 @@ void main() {
       expect(find.text(AppStrings.mapLocatingYou), findsOneWidget);
       // Tiles, not a bare full-screen spinner in place of the map.
       expect(find.byType(TileLayer), findsOneWidget);
+    },
+  );
+
+  testWidgets('centres on the user, not on the nearest court', (tester) async {
+    // The nearest court is deliberately far from the user: centring on it
+    // would push the user off their own map.
+    final courts = [
+      CourtWithDistance(
+        court: _courtAt('far', 'Far court', 45.7640, 4.8357),
+        distanceInMeters: 4500,
+      ),
+    ];
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          userPositionProvider.overrideWith(
+            (ref) async =>
+                const UserPosition(latitude: 48.8566, longitude: 2.3522),
+          ),
+          nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
+            yield courts;
+          }),
+        ],
+        child: const MaterialApp(home: CourtsMapPage()),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    final camera = MapCamera.of(tester.element(find.byType(TileLayer)));
+    expect(camera.center.latitude, closeTo(48.8566, 0.0001));
+    expect(camera.center.longitude, closeTo(2.3522, 0.0001));
+  });
+
+  testWidgets(
+    'falls back to the nearest court when there is no position at all',
+    (tester) async {
+      final courts = [
+        CourtWithDistance(
+          court: _courtAt('near', 'Near court', 45.7640, 4.8357),
+          distanceInMeters: 300,
+        ),
+      ];
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            userPositionProvider.overrideWith(
+              (ref) async => throw const LocationPermissionDeniedException(),
+            ),
+            nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
+              yield courts;
+            }),
+          ],
+          child: const MaterialApp(home: CourtsMapPage()),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      final camera = MapCamera.of(tester.element(find.byType(TileLayer)));
+      expect(camera.center.latitude, closeTo(45.7640, 0.0001));
+      expect(camera.center.longitude, closeTo(4.8357, 0.0001));
     },
   );
 

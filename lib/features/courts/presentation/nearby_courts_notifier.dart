@@ -12,7 +12,7 @@ const double _nearbyRadiusInMeters = 5000;
 class NearbyCourtsNotifier extends StreamNotifier<List<CourtWithDistance>> {
   @override
   Stream<List<CourtWithDistance>> build() async* {
-    final position = await ref.watch(locationServiceProvider).currentPosition();
+    final position = await ref.watch(userPositionProvider.future);
     final courtRepository = ref.watch(courtRepositoryProvider);
     final bounds = GeoBounds.aroundPoint(
       position.latitude,

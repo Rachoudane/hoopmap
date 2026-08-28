@@ -35,10 +35,10 @@ class _CourtsMapPageState extends ConsumerState<CourtsMapPage> {
   bool _recentering = false;
 
   // MapController.move() throws until the map has been laid out, and the
-  // courts can resolve either side of that, so both conditions are tracked
+  // position can resolve either side of that, so both conditions are tracked
   // and whichever happens last performs the move.
   bool _mapReady = false;
-  bool _centeredOnCourts = false;
+  bool _centered = false;
 
   @override
   void dispose() {
@@ -46,12 +46,32 @@ class _CourtsMapPageState extends ConsumerState<CourtsMapPage> {
     super.dispose();
   }
 
-  /// Brings the nearest court into view, once, the first time courts are
-  /// known. Any later camera change belongs to the user.
-  void _centerOnCourtsIfNeeded(List<CourtWithDistance>? courts) {
-    if (_centeredOnCourts || !_mapReady) return;
+  /// Centres the map once, on the user if their position is known and on the
+  /// nearest court otherwise. Any later camera change belongs to the user.
+  ///
+  /// The user's own position is what the map should open on: the nearest
+  /// court can be kilometres away in an arbitrary direction, which puts the
+  /// user off-screen on their own map and makes the distances on every marker
+  /// impossible to read against anything. The nearest court is only a
+  /// fallback for when there is no position at all — still better than a
+  /// hardcoded city.
+  void _centerIfNeeded() {
+    if (_centered || !_mapReady) return;
+
+    final position = ref.read(userPositionProvider).value;
+    if (position != null) {
+      _centered = true;
+      _mapController.move(
+        LatLng(position.latitude, position.longitude),
+        _initialMapZoom,
+      );
+      return;
+    }
+
+    // No position: fall back to the nearest court, but don't latch — a
+    // position arriving later should still win.
+    final courts = ref.read(nearbyCourtsProvider).value;
     if (courts == null || courts.isEmpty) return;
-    _centeredOnCourts = true;
     _mapController.move(
       LatLng(courts.first.court.latitude, courts.first.court.longitude),
       _initialMapZoom,
@@ -82,10 +102,9 @@ class _CourtsMapPageState extends ConsumerState<CourtsMapPage> {
   Widget build(BuildContext context) {
     final courtsAsync = ref.watch(nearbyCourtsProvider);
 
-    // Courts that resolve after the map has been laid out arrive here.
-    ref.listen(nearbyCourtsProvider, (previous, next) {
-      _centerOnCourtsIfNeeded(next.value);
-    });
+    // A position, or courts, resolving after the map has been laid out.
+    ref.listen(userPositionProvider, (previous, next) => _centerIfNeeded());
+    ref.listen(nearbyCourtsProvider, (previous, next) => _centerIfNeeded());
 
     final courts = courtsAsync.value ?? const <CourtWithDistance>[];
 
@@ -104,8 +123,8 @@ class _CourtsMapPageState extends ConsumerState<CourtsMapPage> {
               initialZoom: _initialMapZoom,
               onMapReady: () {
                 _mapReady = true;
-                // Courts that resolved before the map was laid out.
-                _centerOnCourtsIfNeeded(ref.read(nearbyCourtsProvider).value);
+                // A position that resolved before the map was laid out.
+                _centerIfNeeded();
               },
               onTap: (_, _) => setState(() => _selected = null),
             ),
