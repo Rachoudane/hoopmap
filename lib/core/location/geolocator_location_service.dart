@@ -29,6 +29,18 @@ class GeolocatorLocationService extends LocationService {
     );
   }
 
+  @override
+  Future<UserPosition?> lastKnownPosition() async {
+    // Android can refuse to hand this back (and returns null) rather than
+    // throwing; iOS returns the cached CLLocation when there is one.
+    final position = await Geolocator.getLastKnownPosition();
+    if (position == null) return null;
+    return UserPosition(
+      latitude: position.latitude,
+      longitude: position.longitude,
+    );
+  }
+
   // `unableToDetermine` is treated as a plain denial: the app has no
   // permission it can act on, but the user may still be able to grant one,
   // so it must not be reported as permanently denied.

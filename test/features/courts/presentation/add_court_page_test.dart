@@ -31,6 +31,9 @@ class _FakeLocationService extends LocationService {
   @override
   Future<UserPosition> readPosition() async =>
       const UserPosition(latitude: 48.8566, longitude: 2.3522);
+
+  @override
+  Future<UserPosition?> lastKnownPosition() async => null;
 }
 
 /// Never resolves on its own: lets a test observe the state before the
@@ -53,6 +56,9 @@ class _DelayedLocationService extends LocationService {
 
   @override
   Future<UserPosition> readPosition() => _completer.future;
+
+  @override
+  Future<UserPosition?> lastKnownPosition() async => null;
 }
 
 class _FakeCourtRepository implements CourtRepository {

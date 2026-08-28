@@ -42,6 +42,9 @@ abstract final class AppStrings {
   static const errorLocationServiceDisabled =
       'Location is turned off on this device. Turn it on to see courts '
       'near you.';
+  static const errorLocationTimeout =
+      "Couldn't get your location in time. Move somewhere with a clearer "
+      'view of the sky and try again.';
   static const errorOverpassRateLimited =
       'The OpenStreetMap service is under heavy load right now. Try again '
       'in a moment.';

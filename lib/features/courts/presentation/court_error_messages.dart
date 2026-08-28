@@ -15,6 +15,9 @@ String courtErrorMessage(Object error) {
   if (error is LocationServiceDisabledException) {
     return AppStrings.errorLocationServiceDisabled;
   }
+  if (error is LocationFixTimeoutException) {
+    return AppStrings.errorLocationTimeout;
+  }
   if (error is OverpassRateLimitedException) {
     return AppStrings.errorOverpassRateLimited;
   }
@@ -36,6 +39,11 @@ IconData courtErrorIcon(Object error) {
   if (error is LocationPermissionDeniedException ||
       error is LocationServiceDisabledException) {
     return Icons.location_off_rounded;
+  }
+  // Not location_off: the fix was allowed and attempted, it just never
+  // arrived, so the icon shouldn't read as "location is switched off".
+  if (error is LocationFixTimeoutException) {
+    return Icons.location_searching_rounded;
   }
   if (error is CourtNotFoundException) {
     return Icons.search_off;

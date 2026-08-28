@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoopmap/core/location/location_service.dart';
 
@@ -8,14 +10,21 @@ class _RecordingLocationService extends LocationService {
     this.serviceEnabled = true,
     this.initialPermission = LocationPermissionStatus.granted,
     this.permissionAfterRequest = LocationPermissionStatus.granted,
+    this.fixNeverArrives = false,
+    this.lastKnown,
   });
 
   final bool serviceEnabled;
   final LocationPermissionStatus initialPermission;
   final LocationPermissionStatus permissionAfterRequest;
 
+  /// Makes [readPosition] hang forever, the way a cold GPS start indoors does.
+  final bool fixNeverArrives;
+  final UserPosition? lastKnown;
+
   int requestPermissionCallCount = 0;
   int readPositionCallCount = 0;
+  int lastKnownPositionCallCount = 0;
 
   @override
   Future<bool> isServiceEnabled() async => serviceEnabled;
@@ -30,9 +39,18 @@ class _RecordingLocationService extends LocationService {
   }
 
   @override
-  Future<UserPosition> readPosition() async {
+  Future<UserPosition> readPosition() {
     readPositionCallCount++;
-    return const UserPosition(latitude: 48.8566, longitude: 2.3522);
+    if (fixNeverArrives) return Completer<UserPosition>().future;
+    return Future.value(
+      const UserPosition(latitude: 48.8566, longitude: 2.3522),
+    );
+  }
+
+  @override
+  Future<UserPosition?> lastKnownPosition() async {
+    lastKnownPositionCallCount++;
+    return lastKnown;
   }
 }
 
@@ -104,6 +122,53 @@ void main() {
         );
         expect(service.requestPermissionCallCount, 0);
         expect(service.readPositionCallCount, 0);
+      },
+    );
+    test(
+      'falls back to the last known position when the fix times out',
+      () async {
+        final service = _RecordingLocationService(
+          fixNeverArrives: true,
+          lastKnown: const UserPosition(latitude: 45.7640, longitude: 4.8357),
+        );
+
+        final position = await service.currentPosition(
+          timeout: const Duration(milliseconds: 20),
+        );
+
+        expect(
+          position,
+          const UserPosition(latitude: 45.7640, longitude: 4.8357),
+        );
+        expect(service.lastKnownPositionCallCount, 1);
+      },
+    );
+
+    test('throws LocationFixTimeoutException when the fix times out and there '
+        'is no last known position', () async {
+      final service = _RecordingLocationService(fixNeverArrives: true);
+
+      await expectLater(
+        service.currentPosition(timeout: const Duration(milliseconds: 20)),
+        throwsA(isA<LocationFixTimeoutException>()),
+      );
+      expect(service.lastKnownPositionCallCount, 1);
+    });
+
+    test(
+      'never asks for the last known position when the fix arrives in time',
+      () async {
+        final service = _RecordingLocationService(
+          lastKnown: const UserPosition(latitude: 45.7640, longitude: 4.8357),
+        );
+
+        final position = await service.currentPosition();
+
+        expect(
+          position,
+          const UserPosition(latitude: 48.8566, longitude: 2.3522),
+        );
+        expect(service.lastKnownPositionCallCount, 0);
       },
     );
   });

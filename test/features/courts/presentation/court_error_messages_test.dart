@@ -21,6 +21,13 @@ void main() {
       );
     });
 
+    test('gives a specific message for a location fix that timed out', () {
+      expect(
+        courtErrorMessage(const LocationFixTimeoutException()),
+        contains("Couldn't get your location in time"),
+      );
+    });
+
     test('gives a specific message for an Overpass rate limit', () {
       expect(
         courtErrorMessage(OverpassRateLimitedException()),
@@ -66,6 +73,13 @@ void main() {
       expect(
         courtErrorIcon(const LocationServiceDisabledException()),
         Icons.location_off_rounded,
+      );
+    });
+
+    test('uses a searching icon, not location_off, for a timed-out fix', () {
+      expect(
+        courtErrorIcon(const LocationFixTimeoutException()),
+        Icons.location_searching_rounded,
       );
     });
 

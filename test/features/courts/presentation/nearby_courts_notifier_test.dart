@@ -35,6 +35,9 @@ class FakeLocationService extends LocationService {
     if (error != null) throw error;
     return _position!;
   }
+
+  @override
+  Future<UserPosition?> lastKnownPosition() async => null;
 }
 
 class FakeCourtRepository implements CourtRepository {
