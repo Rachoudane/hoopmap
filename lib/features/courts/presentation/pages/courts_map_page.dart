@@ -6,7 +6,6 @@ import 'package:latlong2/latlong.dart';
 
 import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/location/location_providers.dart';
-import '../../../../core/presentation/widgets/app_message_view.dart';
 import '../../../../core/router/routes.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../domain/court_with_distance.dart';
@@ -14,6 +13,14 @@ import '../court_error_messages.dart';
 import '../nearby_courts_notifier.dart';
 import '../widgets/court_marker.dart';
 import '../widgets/court_preview_card.dart';
+
+// Where the map starts before anything is known about the user's position.
+// Normally visible only for the moment the first fix takes to resolve — and
+// when it can't resolve at all, it leaves a real map to pan instead of an
+// error screen.
+const LatLng _initialMapCenter = LatLng(48.8566, 2.3522);
+const double _initialMapZoom = 13;
+const double _recenterZoom = 14;
 
 class CourtsMapPage extends ConsumerStatefulWidget {
   const CourtsMapPage({super.key});
@@ -27,10 +34,28 @@ class _CourtsMapPageState extends ConsumerState<CourtsMapPage> {
   CourtWithDistance? _selected;
   bool _recentering = false;
 
+  // MapController.move() throws until the map has been laid out, and the
+  // courts can resolve either side of that, so both conditions are tracked
+  // and whichever happens last performs the move.
+  bool _mapReady = false;
+  bool _centeredOnCourts = false;
+
   @override
   void dispose() {
     _mapController.dispose();
     super.dispose();
+  }
+
+  /// Brings the nearest court into view, once, the first time courts are
+  /// known. Any later camera change belongs to the user.
+  void _centerOnCourtsIfNeeded(List<CourtWithDistance>? courts) {
+    if (_centeredOnCourts || !_mapReady) return;
+    if (courts == null || courts.isEmpty) return;
+    _centeredOnCourts = true;
+    _mapController.move(
+      LatLng(courts.first.court.latitude, courts.first.court.longitude),
+      _initialMapZoom,
+    );
   }
 
   Future<void> _recenterOnUser() async {
@@ -39,7 +64,10 @@ class _CourtsMapPageState extends ConsumerState<CourtsMapPage> {
       final position = await ref
           .read(locationServiceProvider)
           .currentPosition();
-      _mapController.move(LatLng(position.latitude, position.longitude), 14);
+      _mapController.move(
+        LatLng(position.latitude, position.longitude),
+        _recenterZoom,
+      );
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -54,114 +82,200 @@ class _CourtsMapPageState extends ConsumerState<CourtsMapPage> {
   Widget build(BuildContext context) {
     final courtsAsync = ref.watch(nearbyCourtsProvider);
 
+    // Courts that resolve after the map has been laid out arrive here.
+    ref.listen(nearbyCourtsProvider, (previous, next) {
+      _centerOnCourtsIfNeeded(next.value);
+    });
+
+    final courts = courtsAsync.value ?? const <CourtWithDistance>[];
+
     return Scaffold(
       appBar: AppBar(title: const Text(AppStrings.mapTitle)),
-      body: courtsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) => AppErrorView(
-          message: courtErrorMessage(error),
-          icon: courtErrorIcon(error),
-          onRetry: () => ref.invalidate(nearbyCourtsProvider),
-        ),
-        data: (courts) {
-          if (courts.isEmpty) {
-            return AppEmptyView(
-              icon: Icons.map_outlined,
-              title: AppStrings.noCourtsNearbyTitle,
-              message: AppStrings.noCourtsNearbyMapMessage,
-              actionLabel: AppStrings.refresh,
-              onAction: () => ref.invalidate(nearbyCourtsProvider),
-            );
-          }
-
-          final center = LatLng(
-            courts.first.court.latitude,
-            courts.first.court.longitude,
-          );
-
-          return Stack(
+      // The map is built unconditionally: waiting on a position fix, or
+      // failing to get one, must never cost the user the map itself. The
+      // loading, error and empty states are overlaid on top of it, and the
+      // map stays pannable underneath all three.
+      body: Stack(
+        children: [
+          FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: _initialMapCenter,
+              initialZoom: _initialMapZoom,
+              onMapReady: () {
+                _mapReady = true;
+                // Courts that resolved before the map was laid out.
+                _centerOnCourtsIfNeeded(ref.read(nearbyCourtsProvider).value);
+              },
+              onTap: (_, _) => setState(() => _selected = null),
+            ),
             children: [
-              FlutterMap(
-                mapController: _mapController,
-                options: MapOptions(
-                  initialCenter: center,
-                  initialZoom: 13,
-                  onTap: (_, _) => setState(() => _selected = null),
-                ),
-                children: [
-                  TileLayer(
-                    urlTemplate:
-                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'com.rachoucorp.hoopmap',
-                  ),
-                  MarkerLayer(
-                    markers: [
-                      for (final courtWithDistance in courts)
-                        Marker(
-                          point: LatLng(
-                            courtWithDistance.court.latitude,
-                            courtWithDistance.court.longitude,
-                          ),
-                          width: 48,
-                          height: 48,
-                          child: CourtMarker(
-                            selected:
-                                _selected?.court.id ==
-                                courtWithDistance.court.id,
-                            onTap: () =>
-                                setState(() => _selected = courtWithDistance),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const Align(
-                    alignment: Alignment.bottomLeft,
-                    // SimpleAttributionWidget already renders
-                    // 'flutter_map | © ' before source, so source itself
-                    // must not repeat the © symbol.
-                    child: SimpleAttributionWidget(
-                      source: Text(AppStrings.openStreetMapContributors),
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.rachoucorp.hoopmap',
+              ),
+              MarkerLayer(
+                markers: [
+                  for (final courtWithDistance in courts)
+                    Marker(
+                      point: LatLng(
+                        courtWithDistance.court.latitude,
+                        courtWithDistance.court.longitude,
+                      ),
+                      width: 48,
+                      height: 48,
+                      child: CourtMarker(
+                        selected:
+                            _selected?.court.id == courtWithDistance.court.id,
+                        onTap: () =>
+                            setState(() => _selected = courtWithDistance),
+                      ),
                     ),
-                  ),
                 ],
               ),
-              Positioned(
-                top: AppSpacing.lg,
-                right: AppSpacing.lg,
-                // A default-sized (56dp) FAB, not .small (40dp, below the
-                // 48dp minimum touch target).
-                child: FloatingActionButton(
-                  heroTag: 'recenter',
-                  onPressed: _recentering ? null : _recenterOnUser,
-                  tooltip: AppStrings.recenterOnMyLocation,
-                  child: _recentering
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.my_location),
+              const Align(
+                alignment: Alignment.bottomLeft,
+                // SimpleAttributionWidget already renders
+                // 'flutter_map | © ' before source, so source itself
+                // must not repeat the © symbol.
+                child: SimpleAttributionWidget(
+                  source: Text(AppStrings.openStreetMapContributors),
                 ),
               ),
-              if (_selected case final selected?)
-                Positioned(
-                  left: AppSpacing.lg,
-                  right: AppSpacing.lg,
-                  // Clears the OpenStreetMap attribution pinned to the
-                  // map's bottom-left corner.
-                  bottom: AppSpacing.xxxl,
-                  child: CourtPreviewCard(
-                    courtWithDistance: selected,
-                    onClose: () => setState(() => _selected = null),
-                    onOpenDetail: () => context.pushNamed(
-                      Routes.courtDetailName,
-                      pathParameters: {Routes.courtIdParam: selected.court.id},
-                    ),
-                  ),
-                ),
             ],
-          );
-        },
+          ),
+          Positioned(
+            top: AppSpacing.lg,
+            left: AppSpacing.lg,
+            // Clears the recenter FAB (56dp) pinned to the same corner.
+            right: AppSpacing.lg + 56 + AppSpacing.md,
+            child: _MapStatusBanner(courtsAsync: courtsAsync),
+          ),
+          Positioned(
+            top: AppSpacing.lg,
+            right: AppSpacing.lg,
+            // A default-sized (56dp) FAB, not .small (40dp, below the
+            // 48dp minimum touch target).
+            child: FloatingActionButton(
+              heroTag: 'recenter',
+              onPressed: _recentering ? null : _recenterOnUser,
+              tooltip: AppStrings.recenterOnMyLocation,
+              child: _recentering
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.my_location),
+            ),
+          ),
+          if (_selected case final selected?)
+            Positioned(
+              left: AppSpacing.lg,
+              right: AppSpacing.lg,
+              // Clears the OpenStreetMap attribution pinned to the
+              // map's bottom-left corner.
+              bottom: AppSpacing.xxxl,
+              child: CourtPreviewCard(
+                courtWithDistance: selected,
+                onClose: () => setState(() => _selected = null),
+                onOpenDetail: () => context.pushNamed(
+                  Routes.courtDetailName,
+                  pathParameters: {Routes.courtIdParam: selected.court.id},
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Compact status card floated over the map while courts are loading, when
+/// they failed to load, or when there are none.
+///
+/// Deliberately not `AppErrorView`/`AppEmptyView`: those fill the body and
+/// would hide the map. Here the map has to stay visible and usable, so the
+/// message takes as little room as it can and leaves the rest tappable.
+class _MapStatusBanner extends ConsumerWidget {
+  const _MapStatusBanner({required this.courtsAsync});
+
+  final AsyncValue<List<CourtWithDistance>> courtsAsync;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return switch (courtsAsync) {
+      AsyncLoading() => const _BannerCard(
+        icon: Icons.my_location,
+        message: AppStrings.mapLocatingYou,
+        showProgress: true,
+      ),
+      AsyncError(:final error) => _BannerCard(
+        icon: courtErrorIcon(error),
+        message: courtErrorMessage(error),
+        actionLabel: AppStrings.retry,
+        onAction: () => ref.invalidate(nearbyCourtsProvider),
+      ),
+      AsyncData(value: final courts) when courts.isEmpty => _BannerCard(
+        icon: Icons.sports_basketball_outlined,
+        message: AppStrings.noCourtsNearbyMapMessage,
+        actionLabel: AppStrings.refresh,
+        onAction: () => ref.invalidate(nearbyCourtsProvider),
+      ),
+      _ => const SizedBox.shrink(),
+    };
+  }
+}
+
+class _BannerCard extends StatelessWidget {
+  const _BannerCard({
+    required this.icon,
+    required this.message,
+    this.actionLabel,
+    this.onAction,
+    this.showProgress = false,
+  });
+
+  final IconData icon;
+  final String message;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+  final bool showProgress;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
+        child: Row(
+          children: [
+            if (showProgress)
+              const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            else
+              Icon(icon, size: 20, color: colorScheme.onSurfaceVariant),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Text(
+                message,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+            if (actionLabel != null && onAction != null) ...[
+              const SizedBox(width: AppSpacing.sm),
+              TextButton(onPressed: onAction, child: Text(actionLabel!)),
+            ],
+          ],
+        ),
       ),
     );
   }

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hoopmap/core/l10n/app_strings.dart';
+import 'package:hoopmap/core/location/location_service.dart';
 import 'package:hoopmap/features/courts/domain/court.dart';
 import 'package:hoopmap/features/courts/domain/court_with_distance.dart';
 import 'package:hoopmap/features/courts/presentation/nearby_courts_notifier.dart';
@@ -91,28 +93,28 @@ void main() {
     expect(find.text('Court A'), findsNothing);
   });
 
-  testWidgets('shows an illustrated empty state when there are no courts', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
-            yield const [];
-          }),
-        ],
-        child: const MaterialApp(home: CourtsMapPage()),
-      ),
-    );
-    await tester.pump();
+  testWidgets(
+    'keeps the map visible and says so when there are no courts nearby',
+    (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
+              yield const [];
+            }),
+          ],
+          child: const MaterialApp(home: CourtsMapPage()),
+        ),
+      );
+      await tester.pump();
 
-    expect(find.text('No courts nearby'), findsOneWidget);
-    expect(find.byType(FlutterMap), findsNothing);
-  });
+      expect(find.text(AppStrings.noCourtsNearbyMapMessage), findsOneWidget);
+      expect(find.byType(FlutterMap), findsOneWidget);
+    },
+  );
 
-  testWidgets('shows a human-readable error with a working retry button', (
-    tester,
-  ) async {
+  testWidgets('shows a human-readable error with a working retry button, '
+      'over a map that is still there', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -127,5 +129,48 @@ void main() {
 
     expect(find.text('Something went wrong. Try again.'), findsOneWidget);
     expect(find.text('Retry'), findsOneWidget);
+    // The whole point: a failure costs the user the courts, never the map.
+    expect(find.byType(FlutterMap), findsOneWidget);
+  });
+
+  testWidgets(
+    'renders the map immediately while the position fix is still pending',
+    (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
+              // Never yields: still waiting on the location fix.
+            }),
+          ],
+          child: const MaterialApp(home: CourtsMapPage()),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(FlutterMap), findsOneWidget);
+      expect(find.text(AppStrings.mapLocatingYou), findsOneWidget);
+      // Tiles, not a bare full-screen spinner in place of the map.
+      expect(find.byType(TileLayer), findsOneWidget);
+    },
+  );
+
+  testWidgets('a location permission failure still leaves a pannable map', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
+            throw const LocationPermissionDeniedException();
+          }),
+        ],
+        child: const MaterialApp(home: CourtsMapPage()),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(FlutterMap), findsOneWidget);
+    expect(find.text(AppStrings.errorLocationPermissionDenied), findsOneWidget);
   });
 }

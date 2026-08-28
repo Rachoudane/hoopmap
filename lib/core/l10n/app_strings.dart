@@ -76,6 +76,7 @@ abstract final class AppStrings {
       'No courts were found within 5 km of you.';
   static const openStreetMapContributors = 'OpenStreetMap contributors';
   static const recenterOnMyLocation = 'Recenter on my location';
+  static const mapLocatingYou = 'Finding courts near you…';
 
   // Court detail page
   static const courtDetailTitle = 'Court details';
