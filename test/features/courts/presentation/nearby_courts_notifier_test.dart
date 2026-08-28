@@ -11,7 +11,7 @@ import 'package:hoopmap/features/courts/domain/court_with_distance.dart';
 import 'package:hoopmap/features/courts/domain/geo_bounds.dart';
 import 'package:hoopmap/features/courts/presentation/nearby_courts_notifier.dart';
 
-class FakeLocationService implements LocationService {
+class FakeLocationService extends LocationService {
   FakeLocationService.position(this._position) : _errorToThrow = null;
   FakeLocationService.throwing(this._errorToThrow) : _position = null;
 
@@ -19,7 +19,18 @@ class FakeLocationService implements LocationService {
   final Object? _errorToThrow;
 
   @override
-  Future<UserPosition> currentPosition() async {
+  Future<bool> isServiceEnabled() async => true;
+
+  @override
+  Future<LocationPermissionStatus> checkPermission() async =>
+      LocationPermissionStatus.granted;
+
+  @override
+  Future<LocationPermissionStatus> requestPermission() async =>
+      LocationPermissionStatus.granted;
+
+  @override
+  Future<UserPosition> readPosition() async {
     final error = _errorToThrow;
     if (error != null) throw error;
     return _position!;

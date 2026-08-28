@@ -16,21 +16,43 @@ import 'package:hoopmap/features/courts/presentation/pages/add_court_page.dart';
 import 'package:hoopmap/features/courts/presentation/widgets/location_picker_map.dart';
 import 'package:latlong2/latlong.dart';
 
-class _FakeLocationService implements LocationService {
+class _FakeLocationService extends LocationService {
   @override
-  Future<UserPosition> currentPosition() async =>
+  Future<bool> isServiceEnabled() async => true;
+
+  @override
+  Future<LocationPermissionStatus> checkPermission() async =>
+      LocationPermissionStatus.granted;
+
+  @override
+  Future<LocationPermissionStatus> requestPermission() async =>
+      LocationPermissionStatus.granted;
+
+  @override
+  Future<UserPosition> readPosition() async =>
       const UserPosition(latitude: 48.8566, longitude: 2.3522);
 }
 
 /// Never resolves on its own: lets a test observe the state before the
 /// initial position is known, then [complete] it to move on.
-class _DelayedLocationService implements LocationService {
+class _DelayedLocationService extends LocationService {
   final _completer = Completer<UserPosition>();
 
   void complete(UserPosition position) => _completer.complete(position);
 
   @override
-  Future<UserPosition> currentPosition() => _completer.future;
+  Future<bool> isServiceEnabled() async => true;
+
+  @override
+  Future<LocationPermissionStatus> checkPermission() async =>
+      LocationPermissionStatus.granted;
+
+  @override
+  Future<LocationPermissionStatus> requestPermission() async =>
+      LocationPermissionStatus.granted;
+
+  @override
+  Future<UserPosition> readPosition() => _completer.future;
 }
 
 class _FakeCourtRepository implements CourtRepository {

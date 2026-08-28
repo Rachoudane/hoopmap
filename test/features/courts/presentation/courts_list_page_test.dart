@@ -15,9 +15,20 @@ import 'package:hoopmap/features/courts/presentation/pages/courts_list_page.dart
 import 'package:hoopmap/features/courts/presentation/widgets/court_list_skeleton.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class _FakeLocationService implements LocationService {
+class _FakeLocationService extends LocationService {
   @override
-  Future<UserPosition> currentPosition() async =>
+  Future<bool> isServiceEnabled() async => true;
+
+  @override
+  Future<LocationPermissionStatus> checkPermission() async =>
+      LocationPermissionStatus.granted;
+
+  @override
+  Future<LocationPermissionStatus> requestPermission() async =>
+      LocationPermissionStatus.granted;
+
+  @override
+  Future<UserPosition> readPosition() async =>
       const UserPosition(latitude: 48.8566, longitude: 2.3522);
 }
 
