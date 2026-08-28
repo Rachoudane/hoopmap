@@ -2,21 +2,33 @@ import 'dart:async';
 
 /// Where the user's device is, as far as the app is concerned.
 class UserPosition {
-  const UserPosition({required this.latitude, required this.longitude});
+  const UserPosition({
+    required this.latitude,
+    required this.longitude,
+    this.accuracyInMeters,
+  });
 
   final double latitude;
   final double longitude;
+
+  /// Radius, in meters, within which the true position is expected to lie.
+  ///
+  /// Nullable because a position isn't always accompanied by one — the point
+  /// is to be able to *draw* the uncertainty rather than imply a precision
+  /// the device never claimed.
+  final double? accuracyInMeters;
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is UserPosition &&
         other.latitude == latitude &&
-        other.longitude == longitude;
+        other.longitude == longitude &&
+        other.accuracyInMeters == accuracyInMeters;
   }
 
   @override
-  int get hashCode => Object.hash(latitude, longitude);
+  int get hashCode => Object.hash(latitude, longitude, accuracyInMeters);
 }
 
 /// The three permission states the app has to tell apart.

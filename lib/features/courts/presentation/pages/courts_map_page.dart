@@ -13,6 +13,7 @@ import '../court_error_messages.dart';
 import '../nearby_courts_notifier.dart';
 import '../widgets/court_marker.dart';
 import '../widgets/court_preview_card.dart';
+import '../widgets/user_location_marker.dart';
 
 // Where the map starts before anything is known about the user's position.
 // Normally visible only for the moment the first fix takes to resolve — and
@@ -107,6 +108,8 @@ class _CourtsMapPageState extends ConsumerState<CourtsMapPage> {
     ref.listen(nearbyCourtsProvider, (previous, next) => _centerIfNeeded());
 
     final courts = courtsAsync.value ?? const <CourtWithDistance>[];
+    final userPosition = ref.watch(userPositionProvider).value;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(title: const Text(AppStrings.mapTitle)),
@@ -133,6 +136,38 @@ class _CourtsMapPageState extends ConsumerState<CourtsMapPage> {
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'com.rachoucorp.hoopmap',
               ),
+              // Below the court markers: the user's own position must never
+              // sit on top of something they're trying to tap.
+              if (userPosition?.accuracyInMeters case final accuracy?)
+                CircleLayer(
+                  circles: [
+                    CircleMarker(
+                      point: LatLng(
+                        userPosition!.latitude,
+                        userPosition.longitude,
+                      ),
+                      radius: accuracy,
+                      useRadiusInMeter: true,
+                      color: colorScheme.secondary.withValues(alpha: 0.15),
+                      borderColor: colorScheme.secondary.withValues(alpha: 0.4),
+                      borderStrokeWidth: 1,
+                    ),
+                  ],
+                ),
+              if (userPosition != null)
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: LatLng(
+                        userPosition.latitude,
+                        userPosition.longitude,
+                      ),
+                      width: UserLocationMarker.size,
+                      height: UserLocationMarker.size,
+                      child: const UserLocationMarker(),
+                    ),
+                  ],
+                ),
               MarkerLayer(
                 markers: [
                   for (final courtWithDistance in courts)

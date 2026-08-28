@@ -21,13 +21,8 @@ class GeolocatorLocationService extends LocationService {
       _toStatus(await Geolocator.requestPermission());
 
   @override
-  Future<UserPosition> readPosition() async {
-    final position = await Geolocator.getCurrentPosition();
-    return UserPosition(
-      latitude: position.latitude,
-      longitude: position.longitude,
-    );
-  }
+  Future<UserPosition> readPosition() async =>
+      _toUserPosition(await Geolocator.getCurrentPosition());
 
   @override
   Future<UserPosition?> lastKnownPosition() async {
@@ -35,9 +30,18 @@ class GeolocatorLocationService extends LocationService {
     // throwing; iOS returns the cached CLLocation when there is one.
     final position = await Geolocator.getLastKnownPosition();
     if (position == null) return null;
+    return _toUserPosition(position);
+  }
+
+  static UserPosition _toUserPosition(Position position) {
+    // geolocator reports an unknown accuracy as 0 (and Android occasionally
+    // as a negative value); neither is a radius worth drawing, so both
+    // become "no accuracy" rather than a circle of nothing.
+    final accuracy = position.accuracy;
     return UserPosition(
       latitude: position.latitude,
       longitude: position.longitude,
+      accuracyInMeters: accuracy > 0 ? accuracy : null,
     );
   }
 

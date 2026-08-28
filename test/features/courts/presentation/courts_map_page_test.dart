@@ -10,6 +10,7 @@ import 'package:hoopmap/features/courts/domain/court_with_distance.dart';
 import 'package:hoopmap/features/courts/presentation/nearby_courts_notifier.dart';
 import 'package:hoopmap/features/courts/presentation/pages/courts_map_page.dart';
 import 'package:hoopmap/features/courts/presentation/widgets/court_marker.dart';
+import 'package:hoopmap/features/courts/presentation/widgets/user_location_marker.dart';
 
 Court _court(String id, String name) => _courtAt(id, name, 0, 0);
 
@@ -222,6 +223,88 @@ void main() {
       expect(camera.center.longitude, closeTo(4.8357, 0.0001));
     },
   );
+
+  testWidgets('draws the user dot and an accuracy circle at their position', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          userPositionProvider.overrideWith(
+            (ref) async => const UserPosition(
+              latitude: 48.8566,
+              longitude: 2.3522,
+              accuracyInMeters: 30,
+            ),
+          ),
+          nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
+            yield const <CourtWithDistance>[];
+          }),
+        ],
+        child: const MaterialApp(home: CourtsMapPage()),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byType(UserLocationMarker), findsOneWidget);
+
+    final circleLayer = tester.widget<CircleLayer>(find.byType(CircleLayer));
+    expect(circleLayer.circles, hasLength(1));
+    final circle = circleLayer.circles.single;
+    expect(circle.radius, 30);
+    expect(circle.useRadiusInMeter, isTrue);
+    expect(circle.point.latitude, closeTo(48.8566, 0.0001));
+  });
+
+  testWidgets('draws no accuracy circle when the device reports no accuracy', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          userPositionProvider.overrideWith(
+            (ref) async =>
+                const UserPosition(latitude: 48.8566, longitude: 2.3522),
+          ),
+          nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
+            yield const <CourtWithDistance>[];
+          }),
+        ],
+        child: const MaterialApp(home: CourtsMapPage()),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    // The dot is still shown — only the uncertainty the device never
+    // reported is left undrawn.
+    expect(find.byType(UserLocationMarker), findsOneWidget);
+    expect(find.byType(CircleLayer), findsNothing);
+  });
+
+  testWidgets('draws no user dot while the position is unknown', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          userPositionProvider.overrideWith(
+            (ref) async => throw const LocationPermissionDeniedException(),
+          ),
+          nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
+            yield const <CourtWithDistance>[];
+          }),
+        ],
+        child: const MaterialApp(home: CourtsMapPage()),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byType(UserLocationMarker), findsNothing);
+    expect(find.byType(CircleLayer), findsNothing);
+  });
 
   testWidgets('a location permission failure still leaves a pannable map', (
     tester,
