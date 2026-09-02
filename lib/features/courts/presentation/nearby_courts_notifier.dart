@@ -3,11 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/location/location_providers.dart';
 import '../data/court_repository_provider.dart';
 import '../domain/court_with_distance.dart';
-import '../domain/distance.dart';
 import '../domain/geo_bounds.dart';
 
-// Radius of the search area used to look up nearby courts, in meters.
-const double _nearbyRadiusInMeters = 5000;
+/// Radius of the search area used to look up nearby courts, in meters.
+const double nearbyRadiusInMeters = 5000;
 
 class NearbyCourtsNotifier extends StreamNotifier<List<CourtWithDistance>> {
   @override
@@ -17,27 +16,11 @@ class NearbyCourtsNotifier extends StreamNotifier<List<CourtWithDistance>> {
     final bounds = GeoBounds.aroundPoint(
       position.latitude,
       position.longitude,
-      _nearbyRadiusInMeters,
+      nearbyRadiusInMeters,
     );
 
     await for (final courts in courtRepository.watchCourtsInBounds(bounds)) {
-      final courtsWithDistance =
-          courts
-              .map(
-                (court) => CourtWithDistance(
-                  court: court,
-                  distanceInMeters: distanceInMetersBetween(
-                    position.latitude,
-                    position.longitude,
-                    court.latitude,
-                    court.longitude,
-                  ),
-                ),
-              )
-              .toList()
-            ..sort((a, b) => a.distanceInMeters.compareTo(b.distanceInMeters));
-
-      yield courtsWithDistance;
+      yield courtsByDistanceFrom(courts, position.latitude, position.longitude);
     }
   }
 }

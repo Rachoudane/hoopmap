@@ -39,6 +39,18 @@ Two of those failures cannot be fixed by retrying, because the setting that bloc
 
 `AddCourtPage` keeps a single source of truth for the position (the latitude/longitude text controllers), fed by three equivalent paths: the map (`LocationPickerMap`, a reticle fixed at its center, `onPositionChanged` from the underlying `FlutterMap`), the "My current location" button (`LocationService`), and manual entry (collapsed inside an `ExpansionTile` with `maintainState: true`, so its validators stay active even while collapsed). The submit button stays disabled until an initial position is known.
 
+## What the map searches
+
+The list always searches a 5 km radius around the user (`nearbyCourtsProvider`). The map starts on that same search, then hands it over to the viewport: `visibleMapBoundsProvider` holds the box the map is showing, and `courtsInBoundsProvider` — a `StreamProvider` family keyed by `GeoBounds` — searches whichever box it is given, so panning to another neighbourhood shows that neighbourhood's courts instead of an empty map.
+
+Three details make that behave:
+
+- **Only gestures count.** `onPositionChanged` ignores camera moves the page makes itself (centring on the first fix, recentring), which would otherwise search twice for the same place; and the map is laid out, reporting a viewport, before the position fix lands, so honouring that first viewport would spend an Overpass query on wherever the map happened to open. `visibleMapBoundsProvider` staying null until the first pan is what expresses that.
+- **The camera has to settle.** A pan emits a camera update per frame; the viewport only becomes a search after `_boundsSettleDelay` (600 ms) without movement.
+- **`GeoBounds` has value equality**, which is what makes it usable as a family key: a viewport that lands back on a box already searched is answered without a second identical query.
+
+Distances are measured from the user's position when it's known and from the middle of the viewport otherwise (a court on the map still has to say how far it is from something). The position is read, not watched, so a fix landing mid-search doesn't re-run the query just to relabel distances.
+
 ## The repository pattern and the composite repository
 
 `CourtRepository` is the only abstraction the `presentation` layer sees: `watchCourtsInBounds(GeoBounds)`, `watchCourt(String id)`, and `addCourt(Court court)`. Three classes implement it:
@@ -72,5 +84,5 @@ No test in the project makes a real network call or a real Firebase call:
 
 - **Dependency on Overpass**: the app relies entirely on the public `overpass-api.de` instance and its usage policy (30 s timeout, capped queried-area size). If that service is unavailable, slow, or rate-limits requests, searching OpenStreetMap courts fails, with no fallback to another instance.
 - **No disk cache**: every search re-triggers an Overpass request and a Firestore request; no response is persisted locally between sessions.
-- **Fixed search radius**: `NearbyCourtsNotifier` always queries a 5,000-meter radius around the user's position; this radius is neither configurable by the user nor adjusted for court density.
+- **Fixed search radius on the list**: `NearbyCourtsNotifier` always queries a 5,000-meter radius around the user's position; this radius is neither configurable by the user nor adjusted for court density. The map escapes it by searching its own viewport, but only from the first pan onwards, and only for the map.
 - **No moderation**: `AddCourtController` writes directly to Firestore as soon as the form is valid. Nothing filters, flags, or verifies a submission before it's visible to every user.

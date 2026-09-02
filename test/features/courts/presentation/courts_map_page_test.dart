@@ -5,8 +5,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hoopmap/core/l10n/app_strings.dart';
 import 'package:hoopmap/core/location/location_providers.dart';
 import 'package:hoopmap/core/location/location_service.dart';
+import 'package:hoopmap/features/courts/data/court_repository_provider.dart';
 import 'package:hoopmap/features/courts/domain/court.dart';
+import 'package:hoopmap/features/courts/domain/court_repository.dart';
 import 'package:hoopmap/features/courts/domain/court_with_distance.dart';
+import 'package:hoopmap/features/courts/domain/geo_bounds.dart';
 import 'package:hoopmap/features/courts/presentation/nearby_courts_notifier.dart';
 import 'package:hoopmap/features/courts/presentation/pages/courts_map_page.dart';
 import 'package:hoopmap/features/courts/presentation/widgets/court_marker.dart';
@@ -24,6 +27,36 @@ Court _courtAt(String id, String name, double latitude, double longitude) =>
       isOutdoor: true,
       createdAt: DateTime(2026, 1, 1),
     );
+
+/// Answers with whichever of [courts] falls inside the requested box, and
+/// keeps every box it was asked about — which is how a test can tell that
+/// panning searched somewhere new rather than the same place twice.
+class _RecordingCourtRepository implements CourtRepository {
+  _RecordingCourtRepository(this.courts);
+
+  final List<Court> courts;
+  final List<GeoBounds> requestedBounds = [];
+
+  @override
+  Stream<List<Court>> watchCourtsInBounds(GeoBounds bounds) async* {
+    requestedBounds.add(bounds);
+    yield courts
+        .where(
+          (court) =>
+              court.latitude >= bounds.minLat &&
+              court.latitude <= bounds.maxLat &&
+              court.longitude >= bounds.minLng &&
+              court.longitude <= bounds.maxLng,
+        )
+        .toList();
+  }
+
+  @override
+  Stream<Court> watchCourt(String id) => Stream.error(UnimplementedError());
+
+  @override
+  Future<String> addCourt(Court court) => throw UnimplementedError();
+}
 
 /// Real [LocationService.currentPosition] orchestration over answers a test
 /// controls, so a failure reaches the page the way the device produces it.
@@ -66,6 +99,15 @@ class _RecordingLocationService extends LocationService {
 
   @override
   Future<UserPosition?> lastKnownPosition() async => null;
+}
+
+/// Drags the map, then lets the settle delay expire so the new viewport
+/// becomes a search.
+Future<void> _panMap(WidgetTester tester, Offset by) async {
+  await tester.drag(find.byType(FlutterMap), by);
+  await tester.pump();
+  await tester.pump(const Duration(seconds: 1));
+  await tester.pump();
 }
 
 void main() {
@@ -366,6 +408,129 @@ void main() {
 
     expect(find.byType(FlutterMap), findsOneWidget);
     expect(find.text(AppStrings.errorLocationPermissionDenied), findsOneWidget);
+  });
+
+  testWidgets('panning searches the area the map was moved to', (tester) async {
+    final repository = _RecordingCourtRepository([
+      _courtAt('home', 'Home court', 48.8566, 2.3522),
+    ]);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          locationServiceProvider.overrideWithValue(
+            _RecordingLocationService(),
+          ),
+          courtRepositoryProvider.overrideWithValue(repository),
+        ],
+        child: const MaterialApp(home: CourtsMapPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // The first search is the 5 km around the user, as before.
+    expect(repository.requestedBounds, hasLength(1));
+    final aroundUser = repository.requestedBounds.single;
+    expect(aroundUser.centerLat, closeTo(48.8566, 0.001));
+
+    await _panMap(tester, const Offset(-400, -400));
+
+    expect(repository.requestedBounds.length, greaterThan(1));
+    final afterPan = repository.requestedBounds.last;
+    // South-east of where the map started: dragging the map up and to the
+    // left moves the viewport the other way.
+    expect(afterPan.centerLat, lessThan(aroundUser.centerLat));
+    expect(afterPan.centerLng, greaterThan(aroundUser.centerLng));
+  });
+
+  testWidgets('the courts of the area panned to replace the ones left behind', (
+    tester,
+  ) async {
+    // Far enough apart that no viewport holds both.
+    final repository = _RecordingCourtRepository([
+      _courtAt('home', 'Home court', 48.8566, 2.3522),
+      _courtAt('away', 'Away court', 40, 20),
+    ]);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          locationServiceProvider.overrideWithValue(
+            _RecordingLocationService(),
+          ),
+          courtRepositoryProvider.overrideWithValue(repository),
+        ],
+        child: const MaterialApp(home: CourtsMapPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CourtMarker), findsOneWidget);
+
+    // A pan that lands on nothing: the map has to say so rather than keep
+    // showing the courts of the place the user left.
+    await _panMap(tester, const Offset(-2000, 0));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CourtMarker), findsNothing);
+    expect(find.text(AppStrings.noCourtsNearbyMapMessage), findsOneWidget);
+  });
+
+  testWidgets('a viewport that never moves is never searched twice', (
+    tester,
+  ) async {
+    final repository = _RecordingCourtRepository([
+      _courtAt('home', 'Home court', 48.8566, 2.3522),
+    ]);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          locationServiceProvider.overrideWithValue(
+            _RecordingLocationService(),
+          ),
+          courtRepositoryProvider.overrideWithValue(repository),
+        ],
+        child: const MaterialApp(home: CourtsMapPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
+
+    // Laying the map out reports a viewport of its own; only a gesture may
+    // turn one into an Overpass query.
+    expect(repository.requestedBounds, hasLength(1));
+  });
+
+  testWidgets('recentring on the user goes back to the courts around them', (
+    tester,
+  ) async {
+    final repository = _RecordingCourtRepository([
+      _courtAt('home', 'Home court', 48.8566, 2.3522),
+    ]);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          locationServiceProvider.overrideWithValue(
+            _RecordingLocationService(),
+          ),
+          courtRepositoryProvider.overrideWithValue(repository),
+        ],
+        child: const MaterialApp(home: CourtsMapPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await _panMap(tester, const Offset(-2000, 0));
+    await tester.pumpAndSettle();
+    expect(find.byType(CourtMarker), findsNothing);
+
+    await tester.tap(find.byTooltip(AppStrings.recenterOnMyLocation));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CourtMarker), findsOneWidget);
   });
 
   testWidgets('the banner sends a permanently denied permission to the app '

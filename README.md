@@ -8,6 +8,7 @@ A Flutter app that helps you find basketball courts wherever you are in the worl
 
 - A three-screen onboarding on first launch (what the app is for, where the data comes from, why location is requested), never shown again afterwards.
 - Locates the user and shows nearby basketball courts, sorted by distance, as a list or on a map — reachable through a bottom tab navigation bar.
+- Searches the area the map is showing: panning to another neighbourhood loads that neighbourhood's courts, and the recenter button brings the search back around the user.
 - Searches OpenStreetMap courts on the fly in the relevant geographic area rather than from a preloaded database, so it works anywhere in the world.
 - Merges those results with courts added by users, stored in Firestore.
 - Shows a detail page per court (name, hoop count, indoor/outdoor, coordinates), also reachable by deep link, with its photo when a usable Wikimedia Commons source exists (see [Court photos](#court-photos)).

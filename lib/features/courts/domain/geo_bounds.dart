@@ -36,4 +36,28 @@ class GeoBounds {
   final double maxLng;
 
   double get areaInSquareDegrees => (maxLat - minLat) * (maxLng - minLng);
+
+  /// The middle of the box. Like [GeoBounds.aroundPoint], this assumes a box
+  /// that does not straddle the antimeridian.
+  double get centerLat => (minLat + maxLat) / 2;
+  double get centerLng => (minLng + maxLng) / 2;
+
+  /// Value equality, so bounds can key a provider: two viewports describing
+  /// the same box must resolve to the same search rather than a second
+  /// identical Overpass query.
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is GeoBounds &&
+        other.minLat == minLat &&
+        other.maxLat == maxLat &&
+        other.minLng == minLng &&
+        other.maxLng == maxLng;
+  }
+
+  @override
+  int get hashCode => Object.hash(minLat, maxLat, minLng, maxLng);
+
+  @override
+  String toString() => 'GeoBounds($minLat, $minLng, $maxLat, $maxLng)';
 }

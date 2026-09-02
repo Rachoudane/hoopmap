@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,7 +11,9 @@ import '../../../../core/location/location_providers.dart';
 import '../../../../core/router/routes.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../domain/court_with_distance.dart';
+import '../../domain/geo_bounds.dart';
 import '../court_error_messages.dart';
+import '../map_courts_provider.dart';
 import '../nearby_courts_notifier.dart';
 import '../widgets/court_marker.dart';
 import '../widgets/court_preview_card.dart';
@@ -23,6 +27,12 @@ const LatLng _initialMapCenter = LatLng(48.8566, 2.3522);
 const double _initialMapZoom = 13;
 const double _recenterZoom = 14;
 
+// How long the map has to sit still before its viewport becomes a search.
+// A pan or a pinch produces a camera update per frame; searching on each one
+// would fire dozens of Overpass queries to answer the single question the
+// user asks when they stop moving.
+const Duration _boundsSettleDelay = Duration(milliseconds: 600);
+
 class CourtsMapPage extends ConsumerStatefulWidget {
   const CourtsMapPage({super.key});
 
@@ -34,6 +44,7 @@ class _CourtsMapPageState extends ConsumerState<CourtsMapPage> {
   final _mapController = MapController();
   CourtWithDistance? _selected;
   bool _recentering = false;
+  Timer? _boundsSettleTimer;
 
   // MapController.move() throws until the map has been laid out, and the
   // position can resolve either side of that, so both conditions are tracked
@@ -43,8 +54,36 @@ class _CourtsMapPageState extends ConsumerState<CourtsMapPage> {
 
   @override
   void dispose() {
+    _boundsSettleTimer?.cancel();
     _mapController.dispose();
     super.dispose();
+  }
+
+  /// Turns the camera the user left behind into the area to search, once it
+  /// has stopped moving.
+  ///
+  /// Only gestures count. Every programmatic move the page makes itself
+  /// (centring on the first fix, recentring) already knows which courts it
+  /// wants, and letting those moves feed back in here would search twice for
+  /// the same place.
+  void _onCameraChanged(MapCamera camera, bool hasGesture) {
+    if (!hasGesture) return;
+
+    // The camera now belongs to the user: no later arrival of courts or of a
+    // position may move it back under them.
+    _centered = true;
+
+    _boundsSettleTimer?.cancel();
+    _boundsSettleTimer = Timer(_boundsSettleDelay, () {
+      if (!mounted) return;
+      final visible = camera.visibleBounds;
+      ref.read(visibleMapBoundsProvider.notifier).bounds = GeoBounds(
+        minLat: visible.south,
+        maxLat: visible.north,
+        minLng: visible.west,
+        maxLng: visible.east,
+      );
+    });
   }
 
   /// Centres the map once, on the user if their position is known and on the
@@ -85,6 +124,10 @@ class _CourtsMapPageState extends ConsumerState<CourtsMapPage> {
       final position = await ref
           .read(locationServiceProvider)
           .currentPosition();
+      // Coming back to the user means coming back to their courts: the
+      // viewport the search was following is no longer the area of interest.
+      _boundsSettleTimer?.cancel();
+      ref.read(visibleMapBoundsProvider.notifier).clear();
       _mapController.move(
         LatLng(position.latitude, position.longitude),
         _recenterZoom,
@@ -116,13 +159,22 @@ class _CourtsMapPageState extends ConsumerState<CourtsMapPage> {
 
   @override
   Widget build(BuildContext context) {
-    final courtsAsync = ref.watch(nearbyCourtsProvider);
+    // Until the user moves the map, it shows the same search as the list:
+    // the courts around them. From the first pan on, the visible box is the
+    // search, so panning to another neighbourhood shows that neighbourhood's
+    // courts rather than an empty map.
+    final visibleBounds = ref.watch(visibleMapBoundsProvider);
+    final courtsProvider = visibleBounds == null
+        ? nearbyCourtsProvider
+        : courtsInBoundsProvider(visibleBounds);
+    final courtsAsync = ref.watch(courtsProvider);
 
     // A position, or courts, resolving after the map has been laid out.
     ref.listen(userPositionProvider, (previous, next) => _centerIfNeeded());
-    ref.listen(nearbyCourtsProvider, (previous, next) => _centerIfNeeded());
+    ref.listen(courtsProvider, (previous, next) => _centerIfNeeded());
 
     final courts = courtsAsync.value ?? const <CourtWithDistance>[];
+    void reloadCourts() => ref.invalidate(courtsProvider);
     final userPosition = ref.watch(userPositionProvider).value;
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -145,6 +197,7 @@ class _CourtsMapPageState extends ConsumerState<CourtsMapPage> {
                 _centerIfNeeded();
               },
               onTap: (_, _) => setState(() => _selected = null),
+              onPositionChanged: _onCameraChanged,
             ),
             children: [
               TileLayer(
@@ -218,7 +271,10 @@ class _CourtsMapPageState extends ConsumerState<CourtsMapPage> {
             left: AppSpacing.lg,
             // Clears the recenter FAB (56dp) pinned to the same corner.
             right: AppSpacing.lg + 56 + AppSpacing.md,
-            child: _MapStatusBanner(courtsAsync: courtsAsync),
+            child: _MapStatusBanner(
+              courtsAsync: courtsAsync,
+              onReload: reloadCourts,
+            ),
           ),
           Positioned(
             top: AppSpacing.lg,
@@ -267,9 +323,10 @@ class _CourtsMapPageState extends ConsumerState<CourtsMapPage> {
 /// would hide the map. Here the map has to stay visible and usable, so the
 /// message takes as little room as it can and leaves the rest tappable.
 class _MapStatusBanner extends ConsumerWidget {
-  const _MapStatusBanner({required this.courtsAsync});
+  const _MapStatusBanner({required this.courtsAsync, required this.onReload});
 
   final AsyncValue<List<CourtWithDistance>> courtsAsync;
+  final VoidCallback onReload;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -294,14 +351,14 @@ class _MapStatusBanner extends ConsumerWidget {
             ref.read(locationServiceProvider),
             recovery,
           ),
-          null => () => ref.invalidate(nearbyCourtsProvider),
+          null => onReload,
         },
       ),
       AsyncData(value: final courts) when courts.isEmpty => _BannerCard(
         icon: Icons.sports_basketball_outlined,
         message: AppStrings.noCourtsNearbyMapMessage,
         actionLabel: AppStrings.refresh,
-        onAction: () => ref.invalidate(nearbyCourtsProvider),
+        onAction: onReload,
       ),
       _ => const SizedBox.shrink(),
     };

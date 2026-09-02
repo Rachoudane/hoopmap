@@ -62,4 +62,43 @@ void main() {
       expect(bounds.maxLng, lessThanOrEqualTo(180));
     });
   });
+
+  group('GeoBounds as a value', () {
+    test('two boxes describing the same area are the same key', () {
+      const a = GeoBounds(minLat: 1, maxLat: 2, minLng: 3, maxLng: 4);
+      const b = GeoBounds(minLat: 1, maxLat: 2, minLng: 3, maxLng: 4);
+
+      // What keeps a map that jitters back to the same viewport from
+      // re-querying Overpass for courts it already has.
+      expect(a, b);
+      expect(a.hashCode, b.hashCode);
+    });
+
+    test('a box that differs on any edge is a different key', () {
+      const reference = GeoBounds(minLat: 1, maxLat: 2, minLng: 3, maxLng: 4);
+
+      expect(
+        reference,
+        isNot(const GeoBounds(minLat: 1.5, maxLat: 2, minLng: 3, maxLng: 4)),
+      );
+      expect(
+        reference,
+        isNot(const GeoBounds(minLat: 1, maxLat: 2, minLng: 3, maxLng: 4.5)),
+      );
+    });
+
+    test('reports the middle of the box', () {
+      const bounds = GeoBounds(minLat: 10, maxLat: 20, minLng: -4, maxLng: 6);
+
+      expect(bounds.centerLat, 15);
+      expect(bounds.centerLng, 1);
+    });
+
+    test('the middle of a box around a point is that point', () {
+      final bounds = GeoBounds.aroundPoint(48.8566, 2.3522, 5000);
+
+      expect(bounds.centerLat, closeTo(48.8566, 0.0001));
+      expect(bounds.centerLng, closeTo(2.3522, 0.0001));
+    });
+  });
 }
