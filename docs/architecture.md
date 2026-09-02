@@ -61,7 +61,7 @@ Courts closer together than a marker is wide would pile into an unreadable heap,
 
 `CourtRepository` is the only abstraction the `presentation` layer sees: `watchCourtsInBounds(GeoBounds)`, `watchCourt(String id)`, and `addCourt(Court court)`. Three classes implement it:
 
-- `OverpassCourtRepository` translates those calls into Overpass API requests and throws `UnsupportedError` on `addCourt` (the app doesn't write to OpenStreetMap).
+- `OverpassCourtRepository` translates those calls into Overpass API requests and throws `UnsupportedError` on `addCourt` (the app doesn't write to OpenStreetMap). Overpass is a volunteer service with no uptime guarantee, so it queries three community instances in turn (`defaultOverpassEndpoints`), waiting 400 ms before the second attempt and twice as long before each further one, and remembers which instance answered so the next search doesn't start over at one known to be down. Only failures another instance could answer differently are carried over — a rate limit, a timeout, a connectivity failure, a 5xx, an unreadable body; a query the server rejected outright (4xx other than 429) stops there, since every instance runs the same query. The caller sees whatever the last attempt failed with, so a run that ends rate-limited still reads as rate-limited.
 - `FirestoreCourtRepository` reads and writes the Firestore `courts` collection.
 - `CompositeCourtRepository` receives a `List<CourtRepository>` (Overpass then Firestore, wired in `court_repository_provider.dart`) and itself implements `CourtRepository`:
   - `watchCourtsInBounds` and `watchCourt` query all sources in parallel, merge the results (deduplicated by identifier), and tolerate one source failing as long as at least one responds;
@@ -88,7 +88,7 @@ No test in the project makes a real network call or a real Firebase call:
 
 ## Known limitations
 
-- **Dependency on Overpass**: the app relies entirely on the public `overpass-api.de` instance and its usage policy (30 s timeout, capped queried-area size). If that service is unavailable, slow, or rate-limits requests, searching OpenStreetMap courts fails, with no fallback to another instance.
+- **Dependency on Overpass**: the app relies entirely on the public Overpass instances and their usage policy (30 s timeout, capped queried-area size). It falls back across three community mirrors (see below), but if all of them are unavailable or rate-limiting, searching OpenStreetMap courts fails.
 - **No disk cache**: every search re-triggers an Overpass request and a Firestore request; no response is persisted locally between sessions.
 - **Fixed search radius on the list**: `NearbyCourtsNotifier` always queries a 5,000-meter radius around the user's position; this radius is neither configurable by the user nor adjusted for court density. The map escapes it by searching its own viewport, but only from the first pan onwards, and only for the map.
 - **No moderation**: `AddCourtController` writes directly to Firestore as soon as the form is valid. Nothing filters, flags, or verifies a submission before it's visible to every user.

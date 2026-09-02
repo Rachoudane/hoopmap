@@ -22,7 +22,7 @@ A Flutter app that helps you find basketball courts wherever you are in the worl
 
 The courts shown come from two distinct sources, queried and then merged by a composite repository:
 
-- **OpenStreetMap, via the Overpass API**: on every search, the app queries `https://overpass-api.de/api/interpreter` for `leisure=pitch` elements with a `sport` tag containing `basketball`, within a bounding box computed around the search point. Nothing is preloaded or cached: since coverage is worldwide, storing or bundling the entire OpenStreetMap court dataset isn't feasible, so every area viewed triggers its own query.
+- **OpenStreetMap, via the Overpass API**: on every search, the app queries a public Overpass instance (`overpass-api.de`, falling back to the `kumi.systems` and `private.coffee` mirrors with a backoff between attempts) for `leisure=pitch` elements with a `sport` tag containing `basketball`, within a bounding box computed around the search point. Nothing is preloaded or cached: since coverage is worldwide, storing or bundling the entire OpenStreetMap court dataset isn't feasible, so every area viewed triggers its own query.
 - **Firestore**: only courts added by users from the app. Search there is done with a range query on latitude, followed by a client-side filter on longitude.
 
 The composite repository merges both lists, deduplicating by identifier, and keeps working if only one of the two sources responds.
