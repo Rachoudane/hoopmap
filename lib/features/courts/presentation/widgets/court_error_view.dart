@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/l10n/app_strings.dart';
+import '../../../../core/location/location_opt_in.dart';
 import '../../../../core/location/location_providers.dart';
+import '../../../../core/location/location_service.dart';
 import '../../../../core/presentation/widgets/app_message_view.dart';
 import '../court_error_messages.dart';
 
@@ -20,6 +23,20 @@ class CourtErrorView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Not having asked for a location yet is not a failure, and must not be
+    // dressed as one: it is an offer, and the button is the whole point of
+    // the screen.
+    if (error is LocationNotRequestedException) {
+      return AppEmptyView(
+        icon: Icons.my_location,
+        title: AppStrings.locationNotRequestedTitle,
+        message: AppStrings.locationNotRequestedMessage,
+        actionLabel: AppStrings.useMyLocation,
+        actionIcon: Icons.my_location,
+        onAction: () => ref.read(locationOptInProvider.notifier).optIn(),
+      );
+    }
+
     final recovery = courtErrorRecovery(error);
 
     return AppErrorView(

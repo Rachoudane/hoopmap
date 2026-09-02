@@ -57,6 +57,15 @@ class LocationServiceDisabledException implements Exception {
   const LocationServiceDisabledException();
 }
 
+/// The user hasn't asked the app to use their location yet, so it hasn't.
+///
+/// Not a failure: nothing went wrong and nothing was refused. It is the
+/// state the app starts in, and the reason the system permission dialog
+/// never appears on a screen the user hasn't asked anything of.
+class LocationNotRequestedException implements Exception {
+  const LocationNotRequestedException();
+}
+
 /// No fix arrived before the timeout and the device had no usable last known
 /// position to fall back on — typically indoors, on a cold GPS start.
 class LocationFixTimeoutException implements Exception {

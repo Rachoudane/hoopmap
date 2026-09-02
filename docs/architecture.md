@@ -21,6 +21,14 @@ The router (`core/router/app_router.dart`) has two notable features:
 
 Since a court detail page can also be opened directly by a cold deep link (with no existing navigation stack), `core/router/back_to_home_scope.dart` intercepts back navigation (button or system gesture) via `PopScope`: if there's something to pop, it pops normally; otherwise, it navigates explicitly to home.
 
+## Asking for the location
+
+The system permission dialog is the most consequential thing the app ever asks for, and it can only be asked well once: a user shown what Hoopmap is for says yes for a reason, while one who meets the dialog on a screen they haven't read says no to be rid of it — and Android remembers that second answer far better than the app can recover from it.
+
+So nothing touches the device's location until the user asks. `locationOptInProvider` (`core/location/location_opt_in.dart`, persisted in `shared_preferences`) records that request, and `userPositionProvider` throws `LocationNotRequestedException` until it is true. One gate, in front of the whole sequence — not even a silent permission check runs before it — so whichever feature ends up needing a position first cannot bring the dialog forward with it.
+
+Three things can flip it, all of them a button the user pressed: the last onboarding slide's "See courts near me", the same offer on a list with no position (`CourtErrorView` renders that state as an `AppEmptyView` — an offer, not a failure), and the map's status banner. The last onboarding slide also offers "Browse without location", which enters the app having asked for nothing: declining a text button is a decision either side can undo later, unlike declining the system dialog.
+
 ## Error handling
 
 No page ever shows a raw exception type. `features/courts/presentation/court_error_messages.dart` translates every business exception (Overpass failure, 429 rate limiting, denied/disabled location permission or service, location fix timed out, court not found) into an actionable English message, shown by `AppErrorView`/`AppEmptyView` (`core/presentation/widgets/`) with a Retry button that invalidates the relevant provider.

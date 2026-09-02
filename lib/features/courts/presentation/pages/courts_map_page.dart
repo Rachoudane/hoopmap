@@ -7,7 +7,9 @@ import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../../core/l10n/app_strings.dart';
+import '../../../../core/location/location_opt_in.dart';
 import '../../../../core/location/location_providers.dart';
+import '../../../../core/location/location_service.dart';
 import '../../../../core/router/routes.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../domain/court_with_distance.dart';
@@ -324,12 +326,20 @@ class _MapStatusBanner extends ConsumerWidget {
         message: AppStrings.mapLocatingYou,
         showProgress: true,
       ),
+      // The banner has room for one button, so it goes to whatever will
+      // actually move the situation on. Offering the user's own location is
+      // ahead of Retry (there is nothing to retry yet), and so is the system
+      // screen behind a permanent denial — retrying that can only fail
+      // again.
+      AsyncError(error: LocationNotRequestedException()) => _BannerCard(
+        icon: Icons.my_location,
+        message: AppStrings.locationNotRequestedShort,
+        actionLabel: AppStrings.useMyLocation,
+        onAction: () => ref.read(locationOptInProvider.notifier).optIn(),
+      ),
       AsyncError(:final error) => _BannerCard(
         icon: courtErrorIcon(error),
         message: courtErrorMessage(error),
-        // The banner has room for one button, so when the error is one only
-        // the system settings can lift, the way out wins over Retry —
-        // retrying a permanently denied permission can only fail again.
         actionLabel: switch (courtErrorRecovery(error)) {
           final recovery? => locationRecoveryLabel(recovery),
           null => AppStrings.retry,

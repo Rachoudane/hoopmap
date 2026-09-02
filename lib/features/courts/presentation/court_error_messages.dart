@@ -9,6 +9,9 @@ import '../domain/court_repository.dart';
 /// into a message a user can act on, so no screen ever shows a raw
 /// exception type or message.
 String courtErrorMessage(Object error) {
+  if (error is LocationNotRequestedException) {
+    return AppStrings.locationNotRequestedShort;
+  }
   if (error is LocationPermissionPermanentlyDeniedException) {
     return AppStrings.errorLocationPermissionPermanentlyDenied;
   }
@@ -42,6 +45,11 @@ String courtErrorMessage(Object error) {
 /// An icon matching [courtErrorMessage]'s cause, so a location-permission
 /// error doesn't show a network icon (or vice versa).
 IconData courtErrorIcon(Object error) {
+  // Not location_off: nothing is off, nothing was refused — the app simply
+  // hasn't been asked for it yet.
+  if (error is LocationNotRequestedException) {
+    return Icons.my_location;
+  }
   if (error is LocationPermissionDeniedException ||
       error is LocationPermissionPermanentlyDeniedException ||
       error is LocationServiceDisabledException) {

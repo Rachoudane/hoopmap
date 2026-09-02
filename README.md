@@ -6,7 +6,7 @@ A Flutter app that helps you find basketball courts wherever you are in the worl
 
 ## What the app does
 
-- A three-screen onboarding on first launch (what the app is for, where the data comes from, why location is requested), never shown again afterwards.
+- A three-screen onboarding on first launch (what the app is for, where the data comes from, what location is used for), never shown again afterwards. Nothing asks the device for a location until the user presses a button that does — the last slide's "See courts near me", or the same offer inside the app — so the system permission dialog never lands on a screen they haven't read.
 - Locates the user and shows nearby basketball courts, sorted by distance, as a list or on a map — reachable through a bottom tab navigation bar.
 - Searches the area the map is showing: panning to another neighbourhood loads that neighbourhood's courts, and the recenter button brings the search back around the user.
 - Groups courts that would overlap on the map into a single counted marker, which splits apart as you zoom in.

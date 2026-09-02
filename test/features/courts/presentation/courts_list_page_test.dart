@@ -3,10 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoopmap/app.dart';
 import 'package:hoopmap/core/l10n/app_strings.dart';
+import 'package:hoopmap/core/location/location_opt_in.dart';
 import 'package:hoopmap/core/location/location_providers.dart';
 import 'package:hoopmap/core/location/location_service.dart';
 import 'package:hoopmap/core/onboarding/onboarding_providers.dart';
+import 'package:hoopmap/features/courts/data/court_repository_provider.dart';
 import 'package:hoopmap/features/courts/domain/court.dart';
+import 'package:hoopmap/features/courts/domain/court_repository.dart';
+import 'package:hoopmap/features/courts/domain/geo_bounds.dart';
 import 'package:hoopmap/features/courts/domain/court_with_distance.dart';
 import 'package:hoopmap/features/courts/presentation/court_detail_provider.dart';
 import 'package:hoopmap/features/courts/presentation/nearby_courts_notifier.dart';
@@ -50,6 +54,20 @@ class _RecordingLocationService extends LocationService {
 
   @override
   Future<UserPosition?> lastKnownPosition() async => null;
+}
+
+/// Answers every search with nothing, so a test can let the real search run
+/// without reaching Overpass or Firestore.
+class _EmptyCourtRepository implements CourtRepository {
+  @override
+  Stream<List<Court>> watchCourtsInBounds(GeoBounds bounds) =>
+      Stream.value(const []);
+
+  @override
+  Stream<Court> watchCourt(String id) => Stream.error(UnimplementedError());
+
+  @override
+  Future<String> addCourt(Court court) => throw UnimplementedError();
 }
 
 /// Pumps the list page with the courts search already failed with [error].
@@ -282,6 +300,43 @@ void main() {
     expect(find.text(AppStrings.retry), findsOneWidget);
     expect(find.text(AppStrings.openAppSettings), findsNothing);
     expect(find.text(AppStrings.openLocationSettings), findsNothing);
+  });
+
+  testWidgets('offers the user their own courts before anything has been '
+      'asked of them, and asks only when they press it', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarding_completed': true});
+    final sharedPreferences = await SharedPreferences.getInstance();
+    final container = ProviderContainer(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+        locationServiceProvider.overrideWithValue(_FakeLocationService()),
+        courtRepositoryProvider.overrideWithValue(_EmptyCourtRepository()),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: CourtsListPage()),
+      ),
+    );
+    await tester.pump();
+
+    // An offer, not a failure: nothing has gone wrong, and there is nothing
+    // to retry.
+    expect(find.text(AppStrings.locationNotRequestedTitle), findsOneWidget);
+    expect(find.text(AppStrings.retry), findsNothing);
+    expect(container.read(locationOptInProvider), false);
+
+    await tester.tap(find.text(AppStrings.useMyLocation));
+    await tester.pumpAndSettle();
+
+    // The offer is gone: the app went and looked, and this user simply has
+    // no courts nearby.
+    expect(container.read(locationOptInProvider), true);
+    expect(find.text(AppStrings.locationNotRequestedTitle), findsNothing);
+    expect(find.text(AppStrings.noCourtsNearbyTitle), findsOneWidget);
   });
 
   testWidgets('a timed-out fix offers Retry alone', (tester) async {

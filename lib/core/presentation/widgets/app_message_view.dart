@@ -81,6 +81,7 @@ class AppEmptyView extends StatelessWidget {
     required this.title,
     required this.message,
     this.actionLabel,
+    this.actionIcon,
     this.onAction,
   });
 
@@ -88,6 +89,7 @@ class AppEmptyView extends StatelessWidget {
   final String title;
   final String message;
   final String? actionLabel;
+  final IconData? actionIcon;
   final VoidCallback? onAction;
 
   @override
@@ -128,7 +130,7 @@ class AppEmptyView extends StatelessWidget {
               const SizedBox(height: AppSpacing.xl),
               OutlinedButton.icon(
                 onPressed: onAction,
-                icon: const Icon(Icons.refresh),
+                icon: Icon(actionIcon ?? Icons.refresh),
                 label: Text(actionLabel!),
               ),
             ],

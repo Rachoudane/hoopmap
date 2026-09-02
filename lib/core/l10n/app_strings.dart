@@ -7,7 +7,8 @@ abstract final class AppStrings {
   // Onboarding
   static const onboardingSkip = 'Skip';
   static const onboardingNext = 'Next';
-  static const onboardingGetStarted = 'Get started';
+  static const onboardingGetStarted = 'See courts near me';
+  static const onboardingBrowseInstead = 'Browse without location';
   static const onboardingSlide1Title = 'Find a court, wherever you are';
   static const onboardingSlide1Description =
       'Hoopmap finds basketball courts around you and shows them in a list '
@@ -16,10 +17,10 @@ abstract final class AppStrings {
   static const onboardingSlide2Description =
       "Courts come from OpenStreetMap, complemented by contributions from "
       'other Hoopmap users who add missing courts.';
-  static const onboardingSlide3Title = 'Your location, and nothing else';
+  static const onboardingSlide3Title = 'Courts near you, in one tap';
   static const onboardingSlide3Description =
-      "On the next screen, Android will ask for permission to access your "
-      "location. It's used only to show courts near you.";
+      'Hoopmap uses your location only to sort courts by how far away they '
+      "are. Nothing leaves your phone, and you can browse without it.";
 
   // Navigation (bottom nav bar destinations)
   static const navList = 'List';
@@ -37,6 +38,15 @@ abstract final class AppStrings {
   static const openLocationSettings = 'Turn on location';
   static const refresh = 'Refresh';
   static const close = 'Close';
+
+  // Location not asked for yet (the app never prompts on its own)
+  static const locationNotRequestedTitle = 'See the courts around you';
+  static const locationNotRequestedMessage =
+      'Hoopmap needs your location to find nearby courts and sort them by '
+      'distance. It only uses it while you have the app open.';
+  static const locationNotRequestedShort =
+      "Hoopmap isn't using your location yet.";
+  static const useMyLocation = 'See courts near me';
 
   // Court errors (core/court_error_messages.dart)
   static const errorLocationPermissionDenied =

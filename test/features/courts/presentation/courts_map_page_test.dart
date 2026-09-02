@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoopmap/core/l10n/app_strings.dart';
+import 'package:hoopmap/core/location/location_opt_in.dart';
 import 'package:hoopmap/core/location/location_providers.dart';
 import 'package:hoopmap/core/location/location_service.dart';
 import 'package:hoopmap/features/courts/data/court_repository_provider.dart';
@@ -28,6 +29,13 @@ Court _courtAt(String id, String name, double latitude, double longitude) =>
       isOutdoor: true,
       createdAt: DateTime(2026, 1, 1),
     );
+
+/// A user who has already asked for their location. The opt-in gate is what
+/// the app opens with, not what these tests are about — they start where a
+/// user who pressed "See courts near me" starts.
+final _optedIntoLocation = locationOptInProvider.overrideWithBuild(
+  (ref, notifier) => true,
+);
 
 /// Answers with whichever of [courts] falls inside the requested box, and
 /// keeps every box it was asked about — which is how a test can tell that
@@ -492,6 +500,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          _optedIntoLocation,
           locationServiceProvider.overrideWithValue(
             _RecordingLocationService(),
           ),
@@ -529,6 +538,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          _optedIntoLocation,
           locationServiceProvider.overrideWithValue(
             _RecordingLocationService(),
           ),
@@ -560,6 +570,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          _optedIntoLocation,
           locationServiceProvider.overrideWithValue(
             _RecordingLocationService(),
           ),
@@ -587,6 +598,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          _optedIntoLocation,
           locationServiceProvider.overrideWithValue(
             _RecordingLocationService(),
           ),
@@ -616,6 +628,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          _optedIntoLocation,
           locationServiceProvider.overrideWithValue(service),
           nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
             throw const LocationPermissionPermanentlyDeniedException();
@@ -648,6 +661,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          _optedIntoLocation,
           locationServiceProvider.overrideWithValue(service),
           nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
             throw const LocationServiceDisabledException();
@@ -674,6 +688,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          _optedIntoLocation,
           locationServiceProvider.overrideWithValue(service),
           nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
             yield const <CourtWithDistance>[];
@@ -693,5 +708,30 @@ void main() {
     await tester.pump();
 
     expect(service.openAppSettingsCallCount, 1);
+  });
+
+  testWidgets('the banner offers the user their own location before it has '
+      'been asked for', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          locationServiceProvider.overrideWithValue(
+            _RecordingLocationService(),
+          ),
+          nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
+            throw const LocationNotRequestedException();
+          }),
+        ],
+        child: const MaterialApp(home: CourtsMapPage()),
+      ),
+    );
+    await tester.pump();
+
+    // The map is there to browse either way; the banner is an offer on top
+    // of it, not an error in place of it.
+    expect(find.byType(FlutterMap), findsOneWidget);
+    expect(find.text(AppStrings.locationNotRequestedShort), findsOneWidget);
+    expect(find.text(AppStrings.useMyLocation), findsOneWidget);
+    expect(find.text(AppStrings.retry), findsNothing);
   });
 }

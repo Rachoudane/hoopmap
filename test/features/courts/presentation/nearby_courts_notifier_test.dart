@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hoopmap/core/location/location_opt_in.dart';
 import 'package:hoopmap/core/location/location_providers.dart';
 import 'package:hoopmap/core/location/location_service.dart';
 import 'package:hoopmap/features/courts/data/court_repository_provider.dart';
@@ -10,6 +11,13 @@ import 'package:hoopmap/features/courts/domain/court_repository.dart';
 import 'package:hoopmap/features/courts/domain/court_with_distance.dart';
 import 'package:hoopmap/features/courts/domain/geo_bounds.dart';
 import 'package:hoopmap/features/courts/presentation/nearby_courts_notifier.dart';
+
+/// A user who has already asked for their location. The opt-in gate is what
+/// the app opens with, not what these tests are about — they start where a
+/// user who pressed "See courts near me" starts.
+final _optedIntoLocation = locationOptInProvider.overrideWithBuild(
+  (ref, notifier) => true,
+);
 
 class FakeLocationService extends LocationService {
   FakeLocationService.position(this._position) : _errorToThrow = null;
@@ -85,6 +93,7 @@ void main() {
       final controller = StreamController<List<Court>>();
       final container = ProviderContainer(
         overrides: [
+          _optedIntoLocation,
           locationServiceProvider.overrideWithValue(
             FakeLocationService.position(
               const UserPosition(latitude: 0, longitude: 0),
@@ -116,6 +125,7 @@ void main() {
       final controller = StreamController<List<Court>>();
       final container = ProviderContainer(
         overrides: [
+          _optedIntoLocation,
           locationServiceProvider.overrideWithValue(
             FakeLocationService.position(
               const UserPosition(latitude: 0, longitude: 0),
@@ -150,6 +160,7 @@ void main() {
         final controller = StreamController<List<Court>>.broadcast();
         final container = ProviderContainer(
           overrides: [
+            _optedIntoLocation,
             locationServiceProvider.overrideWithValue(
               FakeLocationService.throwing(failure),
             ),
@@ -175,6 +186,7 @@ void main() {
       final repository = FakeCourtRepository(controller);
       final container = ProviderContainer(
         overrides: [
+          _optedIntoLocation,
           locationServiceProvider.overrideWithValue(
             FakeLocationService.throwing(
               const LocationServiceDisabledException(),
@@ -204,6 +216,7 @@ void main() {
       final controller = StreamController<List<Court>>.broadcast();
       final container = ProviderContainer(
         overrides: [
+          _optedIntoLocation,
           locationServiceProvider.overrideWithValue(
             FakeLocationService.throwing(
               const LocationPermissionDeniedException(),
@@ -228,6 +241,7 @@ void main() {
       final controller = StreamController<List<Court>>();
       final container = ProviderContainer(
         overrides: [
+          _optedIntoLocation,
           locationServiceProvider.overrideWithValue(
             FakeLocationService.position(
               const UserPosition(latitude: 0, longitude: 0),

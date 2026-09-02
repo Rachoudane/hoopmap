@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_strings.dart';
+import '../../location/location_opt_in.dart';
 import '../../router/routes.dart';
 import '../../theme/app_spacing.dart';
 import '../onboarding_providers.dart';
@@ -56,7 +57,16 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     super.dispose();
   }
 
-  Future<void> _finish() async {
+  /// Leaves onboarding for the app.
+  ///
+  /// [withLocation] is the whole point of the last slide: the system
+  /// permission dialog only ever appears because the user pressed a button
+  /// asking for their courts, never because they reached the end of a
+  /// carousel. Skipping, or browsing without location, opts into nothing.
+  Future<void> _finish({bool withLocation = false}) async {
+    if (withLocation) {
+      await ref.read(locationOptInProvider.notifier).optIn();
+    }
     await ref.read(onboardingCompletedProvider.notifier).complete();
     if (!mounted) return;
     context.go(Routes.home);
@@ -64,7 +74,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
 
   void _next() {
     if (_isLastPage) {
-      _finish();
+      _finish(withLocation: true);
       return;
     }
     _pageController.nextPage(
@@ -167,7 +177,12 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
               ],
             ),
             Padding(
-              padding: const EdgeInsets.all(AppSpacing.xl),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.xl,
+                AppSpacing.xl,
+                AppSpacing.xl,
+                AppSpacing.md,
+              ),
               child: ElevatedButton(
                 onPressed: _next,
                 child: Text(
@@ -175,6 +190,22 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                       ? AppStrings.onboardingGetStarted
                       : AppStrings.onboardingNext,
                 ),
+              ),
+            ),
+            // The way in for someone who isn't ready to hand over their
+            // location. Refusing the system dialog is a decision Android
+            // remembers and the app can barely recover from; declining a
+            // text button is one either of them can undo later.
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+              child: SizedBox(
+                height: _isLastPage ? null : 0,
+                child: _isLastPage
+                    ? TextButton(
+                        onPressed: _finish,
+                        child: const Text(AppStrings.onboardingBrowseInstead),
+                      )
+                    : const SizedBox.shrink(),
               ),
             ),
           ],

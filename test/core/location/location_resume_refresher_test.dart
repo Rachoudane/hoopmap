@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hoopmap/core/location/location_opt_in.dart';
 import 'package:hoopmap/core/location/location_providers.dart';
 import 'package:hoopmap/core/location/location_resume_refresher.dart';
 import 'package:hoopmap/core/location/location_service.dart';
+
+/// A user who has already asked for their location. The opt-in gate is what
+/// the app opens with, not what these tests are about — they start where a
+/// user who pressed "See courts near me" starts.
+final _optedIntoLocation = locationOptInProvider.overrideWithBuild(
+  (ref, notifier) => true,
+);
 
 /// A location service whose answers can be changed mid-test, the way a user
 /// changes them in the system settings while the app is in the background.
@@ -51,7 +59,10 @@ Future<void> _pumpSettled(
 ) async {
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [locationServiceProvider.overrideWithValue(service)],
+      overrides: [
+        _optedIntoLocation,
+        locationServiceProvider.overrideWithValue(service),
+      ],
       child: const MaterialApp(
         home: LocationResumeRefresher(child: _PositionReader()),
       ),
