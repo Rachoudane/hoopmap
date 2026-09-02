@@ -15,6 +15,64 @@ import 'package:hoopmap/features/courts/presentation/pages/courts_list_page.dart
 import 'package:hoopmap/features/courts/presentation/widgets/court_list_skeleton.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Records which system screen the page asked for, so "Open settings" is
+/// asserted to actually open the settings rather than merely be visible.
+class _RecordingLocationService extends LocationService {
+  int openAppSettingsCallCount = 0;
+  int openLocationSettingsCallCount = 0;
+
+  @override
+  Future<bool> openAppSettings() async {
+    openAppSettingsCallCount++;
+    return true;
+  }
+
+  @override
+  Future<bool> openLocationSettings() async {
+    openLocationSettingsCallCount++;
+    return true;
+  }
+
+  @override
+  Future<bool> isServiceEnabled() async => true;
+
+  @override
+  Future<LocationPermissionStatus> checkPermission() async =>
+      LocationPermissionStatus.granted;
+
+  @override
+  Future<LocationPermissionStatus> requestPermission() async =>
+      LocationPermissionStatus.granted;
+
+  @override
+  Future<UserPosition> readPosition() async =>
+      const UserPosition(latitude: 0, longitude: 0);
+
+  @override
+  Future<UserPosition?> lastKnownPosition() async => null;
+}
+
+/// Pumps the list page with the courts search already failed with [error].
+Future<_RecordingLocationService> _pumpFailedWith(
+  WidgetTester tester,
+  Object error,
+) async {
+  final service = _RecordingLocationService();
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        locationServiceProvider.overrideWithValue(service),
+        nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
+          throw error;
+        }),
+      ],
+      child: const MaterialApp(home: CourtsListPage()),
+    ),
+  );
+  await tester.pump();
+  return service;
+}
+
 class _FakeLocationService extends LocationService {
   @override
   Future<bool> isServiceEnabled() async => true;
@@ -33,6 +91,12 @@ class _FakeLocationService extends LocationService {
 
   @override
   Future<UserPosition?> lastKnownPosition() async => null;
+
+  @override
+  Future<bool> openAppSettings() async => true;
+
+  @override
+  Future<bool> openLocationSettings() async => true;
 }
 
 Court _court(String id, String name) => Court(
@@ -170,6 +234,63 @@ void main() {
 
     expect(find.text('Something went wrong. Try again.'), findsOneWidget);
     expect(find.text('Retry'), findsOneWidget);
+  });
+
+  testWidgets('a permanently denied permission offers the app settings, and '
+      'opens them', (tester) async {
+    final service = await _pumpFailedWith(
+      tester,
+      const LocationPermissionPermanentlyDeniedException(),
+    );
+
+    expect(
+      find.text(AppStrings.errorLocationPermissionPermanentlyDenied),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text(AppStrings.openAppSettings));
+    await tester.pump();
+
+    expect(service.openAppSettingsCallCount, 1);
+    expect(service.openLocationSettingsCallCount, 0);
+    // Retry survives alongside it: the permission can also come back through
+    // a path this screen never sees.
+    expect(find.text(AppStrings.retry), findsOneWidget);
+  });
+
+  testWidgets('a disabled location service offers the location settings, and '
+      'opens them', (tester) async {
+    final service = await _pumpFailedWith(
+      tester,
+      const LocationServiceDisabledException(),
+    );
+
+    expect(find.text(AppStrings.errorLocationServiceDisabled), findsOneWidget);
+
+    await tester.tap(find.text(AppStrings.openLocationSettings));
+    await tester.pump();
+
+    expect(service.openLocationSettingsCallCount, 1);
+    expect(service.openAppSettingsCallCount, 0);
+  });
+
+  testWidgets('a refused permission offers Retry alone, since the system can '
+      'still prompt for it', (tester) async {
+    await _pumpFailedWith(tester, const LocationPermissionDeniedException());
+
+    expect(find.text(AppStrings.errorLocationPermissionDenied), findsOneWidget);
+    expect(find.text(AppStrings.retry), findsOneWidget);
+    expect(find.text(AppStrings.openAppSettings), findsNothing);
+    expect(find.text(AppStrings.openLocationSettings), findsNothing);
+  });
+
+  testWidgets('a timed-out fix offers Retry alone', (tester) async {
+    await _pumpFailedWith(tester, const LocationFixTimeoutException());
+
+    expect(find.text(AppStrings.errorLocationTimeout), findsOneWidget);
+    expect(find.text(AppStrings.retry), findsOneWidget);
+    expect(find.text(AppStrings.openAppSettings), findsNothing);
+    expect(find.text(AppStrings.openLocationSettings), findsNothing);
   });
 
   testWidgets(

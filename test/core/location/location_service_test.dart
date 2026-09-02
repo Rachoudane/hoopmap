@@ -52,6 +52,14 @@ class _RecordingLocationService extends LocationService {
     lastKnownPositionCallCount++;
     return lastKnown;
   }
+
+  // Never reached by currentPosition(); the screens that offer them are
+  // where they are asserted.
+  @override
+  Future<bool> openAppSettings() async => true;
+
+  @override
+  Future<bool> openLocationSettings() async => true;
 }
 
 void main() {
@@ -110,7 +118,8 @@ void main() {
     });
 
     test(
-      'does not prompt again when permission is permanently denied',
+      'does not prompt again when permission is permanently denied, and says '
+      'so with its own exception',
       () async {
         final service = _RecordingLocationService(
           initialPermission: LocationPermissionStatus.deniedForever,
@@ -118,12 +127,42 @@ void main() {
 
         await expectLater(
           service.currentPosition(),
-          throwsA(isA<LocationPermissionDeniedException>()),
+          throwsA(isA<LocationPermissionPermanentlyDeniedException>()),
         );
         expect(service.requestPermissionCallCount, 0);
         expect(service.readPositionCallCount, 0);
       },
     );
+
+    test('a prompt answered with "never ask again" is permanent, not a plain '
+        'refusal', () async {
+      // The distinction the UI hangs on: this user has no prompt left to
+      // accept, so the only honest button is the one to the settings.
+      final service = _RecordingLocationService(
+        initialPermission: LocationPermissionStatus.denied,
+        permissionAfterRequest: LocationPermissionStatus.deniedForever,
+      );
+
+      await expectLater(
+        service.currentPosition(),
+        throwsA(isA<LocationPermissionPermanentlyDeniedException>()),
+      );
+      expect(service.requestPermissionCallCount, 1);
+      expect(service.readPositionCallCount, 0);
+    });
+
+    test('a refused prompt is not reported as permanent', () async {
+      final service = _RecordingLocationService(
+        initialPermission: LocationPermissionStatus.denied,
+        permissionAfterRequest: LocationPermissionStatus.denied,
+      );
+
+      await expectLater(
+        service.currentPosition(),
+        throwsA(isNot(isA<LocationPermissionPermanentlyDeniedException>())),
+      );
+    });
+
     test(
       'falls back to the last known position when the fix times out',
       () async {

@@ -89,10 +89,25 @@ class _CourtsMapPageState extends ConsumerState<CourtsMapPage> {
         LatLng(position.latitude, position.longitude),
         _recenterZoom,
       );
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
+      final recovery = courtErrorRecovery(error);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text(AppStrings.locationUnavailableSnackBar)),
+        SnackBar(
+          content: const Text(AppStrings.locationUnavailableSnackBar),
+          // A snack bar the user can act on: the settings screen that can
+          // unblock this is one tap away instead of a hunt through the
+          // system settings.
+          action: recovery == null
+              ? null
+              : SnackBarAction(
+                  label: locationRecoveryLabel(recovery),
+                  onPressed: () => openLocationRecovery(
+                    ref.read(locationServiceProvider),
+                    recovery,
+                  ),
+                ),
+        ),
       );
     } finally {
       if (mounted) setState(() => _recentering = false);
@@ -267,8 +282,20 @@ class _MapStatusBanner extends ConsumerWidget {
       AsyncError(:final error) => _BannerCard(
         icon: courtErrorIcon(error),
         message: courtErrorMessage(error),
-        actionLabel: AppStrings.retry,
-        onAction: () => ref.invalidate(nearbyCourtsProvider),
+        // The banner has room for one button, so when the error is one only
+        // the system settings can lift, the way out wins over Retry —
+        // retrying a permanently denied permission can only fail again.
+        actionLabel: switch (courtErrorRecovery(error)) {
+          final recovery? => locationRecoveryLabel(recovery),
+          null => AppStrings.retry,
+        },
+        onAction: switch (courtErrorRecovery(error)) {
+          final recovery? => () => openLocationRecovery(
+            ref.read(locationServiceProvider),
+            recovery,
+          ),
+          null => () => ref.invalidate(nearbyCourtsProvider),
+        },
       ),
       AsyncData(value: final courts) when courts.isEmpty => _BannerCard(
         icon: Icons.sports_basketball_outlined,

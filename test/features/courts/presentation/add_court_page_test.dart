@@ -34,6 +34,12 @@ class _FakeLocationService extends LocationService {
 
   @override
   Future<UserPosition?> lastKnownPosition() async => null;
+
+  @override
+  Future<bool> openAppSettings() async => true;
+
+  @override
+  Future<bool> openLocationSettings() async => true;
 }
 
 /// Never resolves on its own: lets a test observe the state before the
@@ -59,6 +65,12 @@ class _DelayedLocationService extends LocationService {
 
   @override
   Future<UserPosition?> lastKnownPosition() async => null;
+
+  @override
+  Future<bool> openAppSettings() async => true;
+
+  @override
+  Future<bool> openLocationSettings() async => true;
 }
 
 class _FakeCourtRepository implements CourtRepository {

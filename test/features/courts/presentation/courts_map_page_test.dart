@@ -25,6 +25,49 @@ Court _courtAt(String id, String name, double latitude, double longitude) =>
       createdAt: DateTime(2026, 1, 1),
     );
 
+/// Real [LocationService.currentPosition] orchestration over answers a test
+/// controls, so a failure reaches the page the way the device produces it.
+class _RecordingLocationService extends LocationService {
+  _RecordingLocationService({
+    this.serviceEnabled = true,
+    this.permission = LocationPermissionStatus.granted,
+  });
+
+  final bool serviceEnabled;
+  final LocationPermissionStatus permission;
+
+  int openAppSettingsCallCount = 0;
+  int openLocationSettingsCallCount = 0;
+
+  @override
+  Future<bool> openAppSettings() async {
+    openAppSettingsCallCount++;
+    return true;
+  }
+
+  @override
+  Future<bool> openLocationSettings() async {
+    openLocationSettingsCallCount++;
+    return true;
+  }
+
+  @override
+  Future<bool> isServiceEnabled() async => serviceEnabled;
+
+  @override
+  Future<LocationPermissionStatus> checkPermission() async => permission;
+
+  @override
+  Future<LocationPermissionStatus> requestPermission() async => permission;
+
+  @override
+  Future<UserPosition> readPosition() async =>
+      const UserPosition(latitude: 48.8566, longitude: 2.3522);
+
+  @override
+  Future<UserPosition?> lastKnownPosition() async => null;
+}
+
 void main() {
   testWidgets('displays a FlutterMap with one marker per court', (
     tester,
@@ -323,5 +366,93 @@ void main() {
 
     expect(find.byType(FlutterMap), findsOneWidget);
     expect(find.text(AppStrings.errorLocationPermissionDenied), findsOneWidget);
+  });
+
+  testWidgets('the banner sends a permanently denied permission to the app '
+      'settings instead of offering Retry', (tester) async {
+    final service = _RecordingLocationService(
+      permission: LocationPermissionStatus.deniedForever,
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          locationServiceProvider.overrideWithValue(service),
+          nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
+            throw const LocationPermissionPermanentlyDeniedException();
+          }),
+        ],
+        child: const MaterialApp(home: CourtsMapPage()),
+      ),
+    );
+    await tester.pump();
+
+    expect(
+      find.text(AppStrings.errorLocationPermissionPermanentlyDenied),
+      findsOneWidget,
+    );
+    // One button fits on the banner, and retrying a permission the system
+    // will not prompt for again can only fail again.
+    expect(find.text(AppStrings.retry), findsNothing);
+
+    await tester.tap(find.text(AppStrings.openAppSettings));
+    await tester.pump();
+
+    expect(service.openAppSettingsCallCount, 1);
+    expect(find.byType(FlutterMap), findsOneWidget);
+  });
+
+  testWidgets('the banner sends a disabled location service to the location '
+      'settings', (tester) async {
+    final service = _RecordingLocationService(serviceEnabled: false);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          locationServiceProvider.overrideWithValue(service),
+          nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
+            throw const LocationServiceDisabledException();
+          }),
+        ],
+        child: const MaterialApp(home: CourtsMapPage()),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text(AppStrings.openLocationSettings));
+    await tester.pump();
+
+    expect(service.openLocationSettingsCallCount, 1);
+  });
+
+  testWidgets('a failed recentre offers the way out from the snack bar', (
+    tester,
+  ) async {
+    final service = _RecordingLocationService(
+      permission: LocationPermissionStatus.deniedForever,
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          locationServiceProvider.overrideWithValue(service),
+          nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
+            yield const <CourtWithDistance>[];
+          }),
+        ],
+        child: const MaterialApp(home: CourtsMapPage()),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byTooltip(AppStrings.recenterOnMyLocation));
+    await tester.pumpAndSettle();
+
+    expect(find.text(AppStrings.locationUnavailableSnackBar), findsOneWidget);
+
+    await tester.tap(find.text(AppStrings.openAppSettings));
+    await tester.pump();
+
+    expect(service.openAppSettingsCallCount, 1);
   });
 }

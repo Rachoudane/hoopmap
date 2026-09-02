@@ -32,13 +32,18 @@ abstract final class AppStrings {
 
   // Generic message views
   static const retry = 'Retry';
+  // Recovery actions for the failures the user can only fix outside the app.
+  static const openAppSettings = 'Open settings';
+  static const openLocationSettings = 'Turn on location';
   static const refresh = 'Refresh';
   static const close = 'Close';
 
   // Court errors (core/court_error_messages.dart)
   static const errorLocationPermissionDenied =
-      'Location access was denied. Allow it in the app settings to see '
-      'courts near you.';
+      'Location access was denied. Allow it to see courts near you.';
+  static const errorLocationPermissionPermanentlyDenied =
+      'Location access is turned off for Hoopmap. Allow it in the app '
+      'settings to see courts near you.';
   static const errorLocationServiceDisabled =
       'Location is turned off on this device. Turn it on to see courts '
       'near you.';

@@ -9,6 +9,9 @@ import '../domain/court_repository.dart';
 /// into a message a user can act on, so no screen ever shows a raw
 /// exception type or message.
 String courtErrorMessage(Object error) {
+  if (error is LocationPermissionPermanentlyDeniedException) {
+    return AppStrings.errorLocationPermissionPermanentlyDenied;
+  }
   if (error is LocationPermissionDeniedException) {
     return AppStrings.errorLocationPermissionDenied;
   }
@@ -37,6 +40,7 @@ String courtErrorMessage(Object error) {
 /// error doesn't show a network icon (or vice versa).
 IconData courtErrorIcon(Object error) {
   if (error is LocationPermissionDeniedException ||
+      error is LocationPermissionPermanentlyDeniedException ||
       error is LocationServiceDisabledException) {
     return Icons.location_off_rounded;
   }
@@ -49,4 +53,58 @@ IconData courtErrorIcon(Object error) {
     return Icons.search_off;
   }
   return Icons.wifi_off_rounded;
+}
+
+/// The way out of an error the app itself cannot fix, because the setting
+/// that blocks it lives outside the app.
+enum LocationRecovery {
+  /// The permission has to be granted again from the app's settings page.
+  appSettings,
+
+  /// Location services have to be switched back on, device-wide.
+  locationSettings,
+}
+
+/// The system screen that can unblock [error], or null when retrying inside
+/// the app is all it takes.
+///
+/// A plain [LocationPermissionDeniedException] deliberately maps to null: the
+/// system will prompt again, so Retry is the honest button — sending the user
+/// to the settings for a permission they can simply be asked for is a longer
+/// road to the same place.
+LocationRecovery? courtErrorRecovery(Object error) {
+  if (error is LocationPermissionPermanentlyDeniedException) {
+    return LocationRecovery.appSettings;
+  }
+  if (error is LocationServiceDisabledException) {
+    return LocationRecovery.locationSettings;
+  }
+  return null;
+}
+
+String locationRecoveryLabel(LocationRecovery recovery) => switch (recovery) {
+  LocationRecovery.appSettings => AppStrings.openAppSettings,
+  LocationRecovery.locationSettings => AppStrings.openLocationSettings,
+};
+
+IconData locationRecoveryIcon(LocationRecovery recovery) => switch (recovery) {
+  LocationRecovery.appSettings => Icons.settings_outlined,
+  LocationRecovery.locationSettings => Icons.location_on_outlined,
+};
+
+/// Opens the system screen [recovery] points at.
+///
+/// Nothing is done with the result on purpose: whether the settings screen
+/// opened or not, what matters next is the state the user comes back with,
+/// which [LocationResumeRefresher] picks up on resume.
+Future<void> openLocationRecovery(
+  LocationService service,
+  LocationRecovery recovery,
+) async {
+  switch (recovery) {
+    case LocationRecovery.appSettings:
+      await service.openAppSettings();
+    case LocationRecovery.locationSettings:
+      await service.openLocationSettings();
+  }
 }

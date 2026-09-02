@@ -5,7 +5,7 @@ import 'location_service.dart';
 
 /// [LocationService] backed by the real `geolocator` plugin.
 ///
-/// Only the four primitives are implemented here — the "services, then
+/// Only the primitives are implemented here — the "services, then
 /// permission, then fix" sequencing lives in [LocationService.currentPosition]
 /// so it stays identical across every implementation, real or fake.
 class GeolocatorLocationService extends LocationService {
@@ -23,6 +23,12 @@ class GeolocatorLocationService extends LocationService {
   @override
   Future<UserPosition> readPosition() async =>
       _toUserPosition(await Geolocator.getCurrentPosition());
+
+  @override
+  Future<bool> openAppSettings() => Geolocator.openAppSettings();
+
+  @override
+  Future<bool> openLocationSettings() => Geolocator.openLocationSettings();
 
   @override
   Future<UserPosition?> lastKnownPosition() async {

@@ -42,6 +42,17 @@ class LocationPermissionDeniedException implements Exception {
   const LocationPermissionDeniedException();
 }
 
+/// The permission was refused in a way no further prompt can undo: the system
+/// will not show one again, and only the app's settings page can grant it
+/// back.
+///
+/// Kept apart from [LocationPermissionDeniedException] because the way out
+/// differs — one is another prompt, the other is a trip to the settings, and
+/// a screen can only offer the right button if it can tell the two apart.
+class LocationPermissionPermanentlyDeniedException implements Exception {
+  const LocationPermissionPermanentlyDeniedException();
+}
+
 class LocationServiceDisabledException implements Exception {
   const LocationServiceDisabledException();
 }
@@ -89,6 +100,15 @@ abstract class LocationService {
   /// bounds it.
   Future<UserPosition> readPosition();
 
+  /// Opens this app's page in the system settings, where a permanently
+  /// denied location permission can be granted again. Resolves to whether the
+  /// settings could be opened.
+  Future<bool> openAppSettings();
+
+  /// Opens the device's location settings, where location services can be
+  /// switched back on. Resolves to whether the settings could be opened.
+  Future<bool> openLocationSettings();
+
   /// The last position the device recorded, if it still holds one. Resolves
   /// immediately and never takes a new fix, so it costs nothing to ask.
   Future<UserPosition?> lastKnownPosition();
@@ -101,9 +121,10 @@ abstract class LocationService {
   /// spinner, and courts don't move.
   ///
   /// Throws [LocationServiceDisabledException] if location services are off,
-  /// [LocationPermissionDeniedException] if permission is denied either way,
-  /// and [LocationFixTimeoutException] if the fix times out with no last known
-  /// position to fall back on.
+  /// [LocationPermissionDeniedException] if the prompt was refused,
+  /// [LocationPermissionPermanentlyDeniedException] if it can no longer be
+  /// prompted for at all, and [LocationFixTimeoutException] if the fix times
+  /// out with no last known position to fall back on.
   Future<UserPosition> currentPosition({
     Duration timeout = defaultFixTimeout,
   }) async {
@@ -114,6 +135,9 @@ abstract class LocationService {
     var status = await checkPermission();
     if (status == LocationPermissionStatus.denied) {
       status = await requestPermission();
+    }
+    if (status == LocationPermissionStatus.deniedForever) {
+      throw const LocationPermissionPermanentlyDeniedException();
     }
     if (status != LocationPermissionStatus.granted) {
       throw const LocationPermissionDeniedException();

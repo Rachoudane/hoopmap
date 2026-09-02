@@ -5,17 +5,28 @@ import '../../theme/app_spacing.dart';
 
 /// Full-body placeholder for an error state: an icon, a human-readable
 /// message and, when [onRetry] is provided, a working "Retry" button.
+///
+/// [actionLabel]/[onAction] add a second, primary button above Retry, for the
+/// errors retrying cannot fix on its own (a permission to re-grant in the
+/// system settings, say). Retry stays available underneath it: coming back
+/// from the settings is not the only way the situation can change.
 class AppErrorView extends StatelessWidget {
   const AppErrorView({
     super.key,
     required this.message,
     this.onRetry,
     this.icon = Icons.wifi_off_rounded,
+    this.actionLabel,
+    this.actionIcon,
+    this.onAction,
   });
 
   final String message;
   final VoidCallback? onRetry;
   final IconData icon;
+  final String? actionLabel;
+  final IconData? actionIcon;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -34,8 +45,20 @@ class AppErrorView extends StatelessWidget {
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyLarge,
             ),
-            if (onRetry != null) ...[
+            if (actionLabel != null && onAction != null) ...[
               const SizedBox(height: AppSpacing.xl),
+              FilledButton.icon(
+                onPressed: onAction,
+                icon: Icon(actionIcon ?? Icons.settings_outlined),
+                label: Text(actionLabel!),
+              ),
+            ],
+            if (onRetry != null) ...[
+              SizedBox(
+                height: actionLabel != null && onAction != null
+                    ? AppSpacing.md
+                    : AppSpacing.xl,
+              ),
               OutlinedButton.icon(
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh),

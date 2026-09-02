@@ -7,9 +7,9 @@ import '../../../../core/presentation/widgets/app_message_view.dart';
 import '../../../../core/terms/terms_providers.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/router/routes.dart';
-import '../court_error_messages.dart';
 import '../nearby_courts_notifier.dart';
 import '../widgets/court_card.dart';
+import '../widgets/court_error_view.dart';
 import '../widgets/court_list_skeleton.dart';
 
 class CourtsListPage extends ConsumerWidget {
@@ -53,9 +53,8 @@ class CourtsListPage extends ConsumerWidget {
       ),
       body: courtsAsync.when(
         loading: () => const CourtListSkeleton(),
-        error: (error, stackTrace) => AppErrorView(
-          message: courtErrorMessage(error),
-          icon: courtErrorIcon(error),
+        error: (error, stackTrace) => CourtErrorView(
+          error: error,
           onRetry: () => ref.invalidate(nearbyCourtsProvider),
         ),
         data: (courts) {

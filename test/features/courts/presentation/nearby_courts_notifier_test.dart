@@ -38,6 +38,12 @@ class FakeLocationService extends LocationService {
 
   @override
   Future<UserPosition?> lastKnownPosition() async => null;
+
+  @override
+  Future<bool> openAppSettings() async => true;
+
+  @override
+  Future<bool> openLocationSettings() async => true;
 }
 
 class FakeCourtRepository implements CourtRepository {
