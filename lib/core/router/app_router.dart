@@ -5,6 +5,7 @@ import '../../features/courts/presentation/pages/add_court_page.dart';
 import '../../features/courts/presentation/pages/court_detail_page.dart';
 import '../../features/courts/presentation/pages/courts_list_page.dart';
 import '../../features/courts/presentation/pages/courts_map_page.dart';
+import '../../features/courts/presentation/pages/pick_city_page.dart';
 import '../location/pages/location_rationale_page.dart';
 import '../onboarding/onboarding_providers.dart';
 import '../onboarding/pages/onboarding_page.dart';
@@ -81,6 +82,11 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((ref) {
         path: Routes.addCourt,
         name: Routes.addCourtName,
         builder: (context, state) => const AddCourtPage(),
+      ),
+      GoRoute(
+        path: Routes.pickCity,
+        name: Routes.pickCityName,
+        builder: (context, state) => const PickCityPage(),
       ),
       GoRoute(
         path: Routes.locationRationale,

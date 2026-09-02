@@ -7,6 +7,7 @@ abstract final class Routes {
   static const String terms = '/terms';
   static const String termsAccept = '/terms/accept';
   static const String locationRationale = '/location';
+  static const String pickCity = '/cities';
 
   static const String onboardingName = 'onboarding';
   static const String homeName = 'home';
@@ -16,6 +17,7 @@ abstract final class Routes {
   static const String termsName = 'terms';
   static const String termsAcceptName = 'termsAccept';
   static const String locationRationaleName = 'locationRationale';
+  static const String pickCityName = 'pickCity';
 
   static const String courtIdParam = 'id';
 }

@@ -83,6 +83,8 @@ class AppEmptyView extends StatelessWidget {
     this.actionLabel,
     this.actionIcon,
     this.onAction,
+    this.secondaryActionLabel,
+    this.onSecondaryAction,
   });
 
   final IconData icon;
@@ -91,6 +93,12 @@ class AppEmptyView extends StatelessWidget {
   final String? actionLabel;
   final IconData? actionIcon;
   final VoidCallback? onAction;
+
+  /// A second way out, shown under the first — for the states where the
+  /// obvious action isn't the only one (browsing a city rather than sharing
+  /// a location, say).
+  final String? secondaryActionLabel;
+  final VoidCallback? onSecondaryAction;
 
   @override
   Widget build(BuildContext context) {
@@ -132,6 +140,13 @@ class AppEmptyView extends StatelessWidget {
                 onPressed: onAction,
                 icon: Icon(actionIcon ?? Icons.refresh),
                 label: Text(actionLabel!),
+              ),
+            ],
+            if (secondaryActionLabel != null && onSecondaryAction != null) ...[
+              const SizedBox(height: AppSpacing.sm),
+              TextButton(
+                onPressed: onSecondaryAction,
+                child: Text(secondaryActionLabel!),
               ),
             ],
           ],

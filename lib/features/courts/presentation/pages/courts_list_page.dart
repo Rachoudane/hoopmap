@@ -7,6 +7,7 @@ import '../../../../core/presentation/widgets/app_message_view.dart';
 import '../../../../core/terms/terms_providers.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/router/routes.dart';
+import '../browse_city_provider.dart';
 import '../nearby_courts_notifier.dart';
 import '../widgets/court_card.dart';
 import '../widgets/court_error_view.dart';
@@ -34,11 +35,23 @@ class CourtsListPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final courtsAsync = ref.watch(nearbyCourtsProvider);
+    final city = ref.watch(browseCityProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(AppStrings.courtsListTitle),
+        // The title says where the courts are from, because with a city
+        // picked they are not "near you" at all.
+        title: Text(
+          city == null
+              ? AppStrings.courtsListTitle
+              : AppStrings.browsingCity(city.name),
+        ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.location_city_outlined),
+            tooltip: AppStrings.browseACity,
+            onPressed: () => context.pushNamed(Routes.pickCityName),
+          ),
           IconButton(
             icon: const Icon(Icons.description_outlined),
             tooltip: AppStrings.termsOfUseTooltip,

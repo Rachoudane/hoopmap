@@ -9,6 +9,7 @@ import 'package:hoopmap/core/router/app_router.dart';
 import 'package:hoopmap/core/router/routes.dart';
 import 'package:hoopmap/features/courts/domain/court.dart';
 import 'package:hoopmap/features/courts/domain/court_with_distance.dart';
+import 'package:hoopmap/features/courts/presentation/browse_city_provider.dart';
 import 'package:hoopmap/features/courts/presentation/court_detail_provider.dart';
 import 'package:hoopmap/features/courts/presentation/nearby_courts_notifier.dart';
 import 'package:hoopmap/features/courts/presentation/pages/court_detail_page.dart';
@@ -93,6 +94,9 @@ Future<GoRouter> _pumpRouterAppAt(
 ) async {
   final container = ProviderContainer(
     overrides: [
+      // The list reads which city is being browsed to title itself; no city
+      // here, so it reads as the courts around the user.
+      browseCityProvider.overrideWithBuild((ref, notifier) => null),
       nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
         yield _fixedCourts;
       }),

@@ -14,6 +14,7 @@ import '../../../../core/router/routes.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../domain/court_with_distance.dart';
 import '../../domain/geo_bounds.dart';
+import '../browse_city_provider.dart';
 import '../court_error_messages.dart';
 import '../map_courts_provider.dart';
 import '../nearby_courts_notifier.dart';
@@ -100,6 +101,18 @@ class _CourtsMapPageState extends ConsumerState<CourtsMapPage> {
   void _centerIfNeeded() {
     if (_centered || !_mapReady) return;
 
+    // A picked city is the most explicit statement of where the user wants
+    // to look, so it beats both their position and the nearest court.
+    final city = ref.read(browseCityProvider);
+    if (city != null) {
+      _centered = true;
+      _mapController.move(
+        LatLng(city.latitude, city.longitude),
+        _initialMapZoom,
+      );
+      return;
+    }
+
     final position = ref.read(userPositionProvider).value;
     if (position != null) {
       _centered = true;
@@ -132,10 +145,12 @@ class _CourtsMapPageState extends ConsumerState<CourtsMapPage> {
       final position = await ref
           .read(locationServiceProvider)
           .currentPosition();
-      // Coming back to the user means coming back to their courts: the
-      // viewport the search was following is no longer the area of interest.
+      // Coming back to the user means coming back to their courts: neither
+      // the viewport the search was following nor a city they were browsing
+      // is the area of interest any more.
       _boundsSettleTimer?.cancel();
       ref.read(visibleMapBoundsProvider.notifier).clear();
+      await ref.read(browseCityProvider.notifier).clear();
       _mapController.move(
         LatLng(position.latitude, position.longitude),
         _recenterZoom,
@@ -180,6 +195,15 @@ class _CourtsMapPageState extends ConsumerState<CourtsMapPage> {
     // A position, or courts, resolving after the map has been laid out.
     ref.listen(userPositionProvider, (previous, next) => _centerIfNeeded());
     ref.listen(courtsProvider, (previous, next) => _centerIfNeeded());
+    // Picking a city is a request to go there, even for a map the user has
+    // already moved themselves: it takes the camera back.
+    ref.listen(browseCityProvider, (previous, next) {
+      if (next == null || next == previous) return;
+      _boundsSettleTimer?.cancel();
+      ref.read(visibleMapBoundsProvider.notifier).clear();
+      _centered = false;
+      _centerIfNeeded();
+    });
 
     final courts = courtsAsync.value ?? const <CourtWithDistance>[];
     void reloadCourts() => ref.invalidate(courtsProvider);

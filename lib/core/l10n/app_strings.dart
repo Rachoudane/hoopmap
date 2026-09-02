@@ -67,6 +67,19 @@ abstract final class AppStrings {
   static const locationRationaleAllow = 'Allow location';
   static const locationRationaleNotNow = 'Not now';
 
+  // Browsing from a city instead of a position
+  static const pickCityTitle = 'Choose a city';
+  static const pickCitySearchLabel = 'Search a city or country';
+  static const pickCityUseMyLocation = 'Use my location';
+  static const pickCityNoMatch =
+      "No city matches that. Try a country name, or pan the map to look "
+      'anywhere.';
+  static const pickCityPanTheMapHint =
+      'Not on the list? Open the Map tab and pan to anywhere in the world.';
+  static const browseACity = 'Choose a city';
+  static String browsingCity(String city) => 'Courts near $city';
+  static const browsingMyLocation = 'Courts near you';
+
   // Court errors (core/court_error_messages.dart)
   static const errorLocationPermissionDenied =
       'Location access was denied. Allow it to see courts near you.';

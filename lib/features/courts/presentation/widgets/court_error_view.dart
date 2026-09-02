@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/location/location_opt_in_flow.dart';
+import '../../../../core/router/routes.dart';
 import '../../../../core/location/location_providers.dart';
 import '../../../../core/location/location_service.dart';
 import '../../../../core/presentation/widgets/app_message_view.dart';
@@ -34,6 +36,10 @@ class CourtErrorView extends ConsumerWidget {
         actionLabel: AppStrings.useMyLocation,
         actionIcon: Icons.my_location,
         onAction: () => requestLocationOptIn(context, ref),
+        // Sharing a location is an offer, not a toll: there has to be a way
+        // through this screen for someone who declines it.
+        secondaryActionLabel: AppStrings.browseACity,
+        onSecondaryAction: () => context.pushNamed(Routes.pickCityName),
       );
     }
 

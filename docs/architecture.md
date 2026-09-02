@@ -53,6 +53,14 @@ Two of those failures cannot be fixed by retrying, because the setting that bloc
 
 `AddCourtPage` keeps a single source of truth for the position (the latitude/longitude text controllers), fed by three equivalent paths: the map (`LocationPickerMap`, a reticle fixed at its center, `onPositionChanged` from the underlying `FlutterMap`), the "My current location" button (`LocationService`), and manual entry (collapsed inside an `ExpansionTile` with `maintainState: true`, so its validators stay active even while collapsed). The submit button stays disabled until an initial position is known.
 
+## Browsing without a location
+
+A user who declines the location — or has no fix — still has an app. Two things make that true.
+
+`browseCityProvider` (`features/courts/presentation/`, persisted) holds a city picked from a bundled list (`domain/city.dart`), and when it is set, `NearbyCourtsNotifier` searches around that city and never awaits a position at all: browsing Tokyo must not depend on Hoopmap knowing where you are. A chosen city beats the device's position on purpose — it is the more recent, more explicit statement of where the user wants to look — and both the picker's "Use my location" and the map's recenter button clear it.
+
+The list is bundled rather than geocoded because a search box that needs a network round trip (and someone else's rate limit) would fail in exactly the situation it exists for. It will never hold everyone's town, so the picker says so and points at the other half of the answer: the map, which searches whatever the user pans it to (see below) and covers everywhere the list doesn't.
+
 ## What the map searches
 
 The list always searches a 5 km radius around the user (`nearbyCourtsProvider`). The map starts on that same search, then hands it over to the viewport: `visibleMapBoundsProvider` holds the box the map is showing, and `courtsInBoundsProvider` — a `StreamProvider` family keyed by `GeoBounds` — searches whichever box it is given, so panning to another neighbourhood shows that neighbourhood's courts instead of an empty map.

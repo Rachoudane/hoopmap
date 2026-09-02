@@ -15,6 +15,7 @@ import 'package:hoopmap/features/courts/domain/court.dart';
 import 'package:hoopmap/features/courts/domain/court_repository.dart';
 import 'package:hoopmap/features/courts/domain/geo_bounds.dart';
 import 'package:hoopmap/features/courts/domain/court_with_distance.dart';
+import 'package:hoopmap/features/courts/presentation/browse_city_provider.dart';
 import 'package:hoopmap/features/courts/presentation/court_detail_provider.dart';
 import 'package:hoopmap/features/courts/presentation/nearby_courts_notifier.dart';
 import 'package:hoopmap/features/courts/presentation/pages/court_detail_page.dart';
@@ -73,6 +74,12 @@ class _EmptyCourtRepository implements CourtRepository {
   Future<String> addCourt(Court court) => throw UnimplementedError();
 }
 
+/// No city picked: these tests are about the courts around the user, and
+/// the browse-a-city path has its own.
+final _noCityChosen = browseCityProvider.overrideWithBuild(
+  (ref, notifier) => null,
+);
+
 /// Pumps the list page with the courts search already failed with [error].
 Future<_RecordingLocationService> _pumpFailedWith(
   WidgetTester tester,
@@ -82,6 +89,7 @@ Future<_RecordingLocationService> _pumpFailedWith(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        _noCityChosen,
         locationServiceProvider.overrideWithValue(service),
         nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
           throw error;
@@ -204,6 +212,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          _noCityChosen,
           nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
             // Never yields: the page should still be in its loading state.
           }),
@@ -224,6 +233,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          _noCityChosen,
           nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
             ref.onDispose(() => invalidated = true);
             yield const [];
@@ -248,6 +258,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          _noCityChosen,
           nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
             throw Exception('boom');
           }),

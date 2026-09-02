@@ -4,23 +4,40 @@ import '../../../core/location/location_providers.dart';
 import '../data/court_repository_provider.dart';
 import '../domain/court_with_distance.dart';
 import '../domain/geo_bounds.dart';
+import 'browse_city_provider.dart';
 
 /// Radius of the search area used to look up nearby courts, in meters.
 const double nearbyRadiusInMeters = 5000;
 
+/// The courts around wherever the user is looking from: their own position,
+/// or the city they picked instead.
 class NearbyCourtsNotifier extends StreamNotifier<List<CourtWithDistance>> {
   @override
   Stream<List<CourtWithDistance>> build() async* {
-    final position = await ref.watch(userPositionProvider.future);
+    // A chosen city short-circuits the position entirely — not just its
+    // value, but the whole permission question. Browsing Tokyo must not
+    // depend on Hoopmap knowing where you are.
+    final city = ref.watch(browseCityProvider);
+    final double latitude;
+    final double longitude;
+    if (city != null) {
+      latitude = city.latitude;
+      longitude = city.longitude;
+    } else {
+      final position = await ref.watch(userPositionProvider.future);
+      latitude = position.latitude;
+      longitude = position.longitude;
+    }
+
     final courtRepository = ref.watch(courtRepositoryProvider);
     final bounds = GeoBounds.aroundPoint(
-      position.latitude,
-      position.longitude,
+      latitude,
+      longitude,
       nearbyRadiusInMeters,
     );
 
     await for (final courts in courtRepository.watchCourtsInBounds(bounds)) {
-      yield courtsByDistanceFrom(courts, position.latitude, position.longitude);
+      yield courtsByDistanceFrom(courts, latitude, longitude);
     }
   }
 }

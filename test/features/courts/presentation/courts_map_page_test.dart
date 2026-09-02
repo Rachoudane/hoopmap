@@ -15,6 +15,7 @@ import 'package:hoopmap/features/courts/domain/court.dart';
 import 'package:hoopmap/features/courts/domain/court_repository.dart';
 import 'package:hoopmap/features/courts/domain/court_with_distance.dart';
 import 'package:hoopmap/features/courts/domain/geo_bounds.dart';
+import 'package:hoopmap/features/courts/presentation/browse_city_provider.dart';
 import 'package:hoopmap/features/courts/presentation/nearby_courts_notifier.dart';
 import 'package:hoopmap/features/courts/presentation/pages/courts_map_page.dart';
 import 'package:hoopmap/features/courts/presentation/widgets/court_cluster_marker.dart';
@@ -35,11 +36,17 @@ Court _courtAt(String id, String name, double latitude, double longitude) =>
       createdAt: DateTime(2026, 1, 1),
     );
 
-/// A user who has already asked for their location. The opt-in gate is what
-/// the app opens with, not what these tests are about — they start where a
-/// user who pressed "See courts near me" starts.
-final _optedIntoLocation = locationOptInProvider.overrideWithBuild(
-  (ref, notifier) => true,
+/// A user browsing from their own position: they asked for their location,
+/// and picked no city to browse instead. Both gates have their own tests;
+/// these start where a user who pressed "See courts near me" starts.
+final _fromTheUsersOwnPosition = [
+  locationOptInProvider.overrideWithBuild((ref, notifier) => true),
+  _noCityChosen,
+];
+
+/// No city picked, so the map is about the user's own surroundings.
+final _noCityChosen = browseCityProvider.overrideWithBuild(
+  (ref, notifier) => null,
 );
 
 /// Answers with whichever of [courts] falls inside the requested box, and
@@ -148,6 +155,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          _noCityChosen,
           nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
             yield courts;
           }),
@@ -177,6 +185,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          _noCityChosen,
           nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
             yield courts;
           }),
@@ -209,6 +218,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          _noCityChosen,
           nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
             yield courts;
           }),
@@ -247,6 +257,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          _noCityChosen,
           nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
             yield courts;
           }),
@@ -276,6 +287,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            _noCityChosen,
             nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
               yield const [];
             }),
@@ -295,6 +307,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          _noCityChosen,
           nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
             throw Exception('boom');
           }),
@@ -316,6 +329,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            _noCityChosen,
             nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
               // Never yields: still waiting on the location fix.
             }),
@@ -345,6 +359,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          _noCityChosen,
           userPositionProvider.overrideWith(
             (ref) async =>
                 const UserPosition(latitude: 48.8566, longitude: 2.3522),
@@ -377,6 +392,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            _noCityChosen,
             userPositionProvider.overrideWith(
               (ref) async => throw const LocationPermissionDeniedException(),
             ),
@@ -402,6 +418,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          _noCityChosen,
           userPositionProvider.overrideWith(
             (ref) async => const UserPosition(
               latitude: 48.8566,
@@ -435,6 +452,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          _noCityChosen,
           userPositionProvider.overrideWith(
             (ref) async =>
                 const UserPosition(latitude: 48.8566, longitude: 2.3522),
@@ -461,6 +479,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          _noCityChosen,
           userPositionProvider.overrideWith(
             (ref) async => throw const LocationPermissionDeniedException(),
           ),
@@ -484,6 +503,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          _noCityChosen,
           nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
             throw const LocationPermissionDeniedException();
           }),
@@ -505,7 +525,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          _optedIntoLocation,
+          ..._fromTheUsersOwnPosition,
           locationServiceProvider.overrideWithValue(
             _RecordingLocationService(),
           ),
@@ -543,7 +563,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          _optedIntoLocation,
+          ..._fromTheUsersOwnPosition,
           locationServiceProvider.overrideWithValue(
             _RecordingLocationService(),
           ),
@@ -575,7 +595,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          _optedIntoLocation,
+          ..._fromTheUsersOwnPosition,
           locationServiceProvider.overrideWithValue(
             _RecordingLocationService(),
           ),
@@ -599,11 +619,15 @@ void main() {
     final repository = _RecordingCourtRepository([
       _courtAt('home', 'Home court', 48.8566, 2.3522),
     ]);
+    // Recentring clears any browsed city, which writes through to storage.
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
 
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          _optedIntoLocation,
+          sharedPreferencesProvider.overrideWithValue(preferences),
+          locationOptInProvider.overrideWithBuild((ref, notifier) => true),
           locationServiceProvider.overrideWithValue(
             _RecordingLocationService(),
           ),
@@ -633,7 +657,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          _optedIntoLocation,
+          ..._fromTheUsersOwnPosition,
           locationServiceProvider.overrideWithValue(service),
           nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
             throw const LocationPermissionPermanentlyDeniedException();
@@ -666,7 +690,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          _optedIntoLocation,
+          ..._fromTheUsersOwnPosition,
           locationServiceProvider.overrideWithValue(service),
           nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
             throw const LocationServiceDisabledException();
@@ -693,7 +717,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          _optedIntoLocation,
+          ..._fromTheUsersOwnPosition,
           locationServiceProvider.overrideWithValue(service),
           nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
             yield const <CourtWithDistance>[];
@@ -720,6 +744,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          _noCityChosen,
           locationServiceProvider.overrideWithValue(
             _RecordingLocationService(),
           ),
