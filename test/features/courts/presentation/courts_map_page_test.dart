@@ -299,6 +299,8 @@ void main() {
 
       expect(find.text(AppStrings.noCourtsNearbyMapMessage), findsOneWidget);
       expect(find.byType(FlutterMap), findsOneWidget);
+      // An empty area is an invitation, not a dead end.
+      expect(find.text(AppStrings.addACourt), findsOneWidget);
     },
   );
 
@@ -812,5 +814,45 @@ void main() {
     // dialog for the first time.
     expect(find.text(AppStrings.locationRationaleTitle), findsOneWidget);
     expect(container.read(locationOptInProvider), isFalse);
+  });
+
+  testWidgets('the empty banner opens the add-court flow', (tester) async {
+    SharedPreferences.setMockInitialValues({'terms_of_use_accepted': true});
+    final preferences = await SharedPreferences.getInstance();
+    final router = GoRouter(
+      initialLocation: Routes.home,
+      routes: [
+        GoRoute(
+          path: Routes.home,
+          builder: (context, state) => const CourtsMapPage(),
+        ),
+        GoRoute(
+          path: Routes.addCourt,
+          name: Routes.addCourtName,
+          builder: (context, state) =>
+              const Scaffold(body: Center(child: Text('Add court form'))),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(preferences),
+          _noCityChosen,
+          nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
+            yield const <CourtWithDistance>[];
+          }),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text(AppStrings.addACourt));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Add court form'), findsOneWidget);
   });
 }

@@ -115,15 +115,23 @@ abstract final class AppStrings {
   // Courts list page
   static const courtsListTitle = 'Nearby courts';
   static const addCourtTooltip = 'Add a court';
-  static const noCourtsNearbyTitle = 'No courts nearby';
+  static const noCourtsNearbyTitle = 'No courts here yet';
   static const noCourtsNearbyListMessage =
-      'No courts were found within 5 km. You can add one yourself.';
+      'Nothing within 5 km of you. Be the first to put a court on the map — '
+      'it takes a name, a pin and about a minute.';
+  static String noCourtsAroundListMessage(String place) =>
+      'Nothing within 5 km of $place. Be the first to put a court on the map '
+      '— it takes a name, a pin and about a minute.';
+  static const noCourtsInAreaListMessage =
+      'Nothing within 5 km of the area you are looking at. Be the first to '
+      'put a court on the map — it takes a name, a pin and about a minute.';
+  static const addFirstCourt = 'Add the first court';
 
   // Courts map page
   static const mapTitle = 'Map';
   static const locationUnavailableSnackBar = "Couldn't access your location.";
-  static const noCourtsNearbyMapMessage =
-      'No courts were found within 5 km of you.';
+  static const noCourtsNearbyMapMessage = 'No courts in this area yet.';
+  static const addACourt = 'Add a court';
   static const openStreetMapContributors = 'OpenStreetMap contributors';
   static String courtClusterLabel(int count) =>
       '$count courts here. Zoom in to see them.';

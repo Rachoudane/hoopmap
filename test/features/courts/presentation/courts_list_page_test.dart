@@ -7,6 +7,8 @@ import 'package:go_router/go_router.dart';
 import 'package:hoopmap/core/location/location_opt_in.dart';
 import 'package:hoopmap/core/location/pages/location_rationale_page.dart';
 import 'package:hoopmap/core/router/routes.dart';
+import 'package:hoopmap/core/terms/pages/terms_of_use_page.dart';
+import 'package:hoopmap/features/courts/domain/city.dart';
 import 'package:hoopmap/core/location/location_providers.dart';
 import 'package:hoopmap/core/location/location_service.dart';
 import 'package:hoopmap/core/onboarding/onboarding_providers.dart';
@@ -226,16 +228,70 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsNothing);
   });
 
-  testWidgets('shows an illustrated empty state with a working action', (
-    tester,
-  ) async {
+  testWidgets('an empty area invites the first court, and can still be '
+      'refreshed', (tester) async {
     var invalidated = false;
+    SharedPreferences.setMockInitialValues({
+      'onboarding_completed': true,
+      'terms_of_use_accepted': true,
+    });
+    final sharedPreferences = await SharedPreferences.getInstance();
+    final router = GoRouter(
+      initialLocation: Routes.home,
+      routes: [
+        GoRoute(
+          path: Routes.home,
+          builder: (context, state) => const CourtsListPage(),
+        ),
+        GoRoute(
+          path: Routes.addCourt,
+          name: Routes.addCourtName,
+          builder: (context, state) =>
+              const Scaffold(body: Center(child: Text('Add court form'))),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           _noCityChosen,
           nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
             ref.onDispose(() => invalidated = true);
+            yield const [];
+          }),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text(AppStrings.noCourtsNearbyTitle), findsOneWidget);
+
+    // Refresh is still there, below the invitation.
+    await tester.tap(find.text(AppStrings.refresh));
+    await tester.pump();
+    expect(invalidated, true);
+
+    // And the invitation is the action that leads somewhere.
+    await tester.tap(find.text(AppStrings.addFirstCourt));
+    await tester.pumpAndSettle();
+    expect(find.text('Add court form'), findsOneWidget);
+  });
+
+  testWidgets('the invitation names the city being browsed', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarding_completed': true});
+    final sharedPreferences = await SharedPreferences.getInstance();
+    final lyon = browsableCities.firstWhere((city) => city.name == 'Lyon');
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+          browseCityProvider.overrideWithBuild((ref, notifier) => lyon),
+          nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
             yield const [];
           }),
         ],
@@ -244,12 +300,60 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('No courts nearby'), findsOneWidget);
+    // "Nothing near you" would be a lie for someone browsing another city.
+    expect(
+      find.text(AppStrings.noCourtsAroundListMessage('Lyon')),
+      findsOneWidget,
+    );
+    expect(find.text(AppStrings.noCourtsNearbyListMessage), findsNothing);
+  });
 
-    await tester.tap(find.text('Refresh'));
+  testWidgets('the invitation still gates on the Terms of Use', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarding_completed': true});
+    final sharedPreferences = await SharedPreferences.getInstance();
+    final router = GoRouter(
+      initialLocation: Routes.home,
+      routes: [
+        GoRoute(
+          path: Routes.home,
+          builder: (context, state) => const CourtsListPage(),
+        ),
+        GoRoute(
+          path: Routes.termsAccept,
+          name: Routes.termsAcceptName,
+          builder: (context, state) =>
+              const TermsOfUsePage(requireAcceptance: true),
+        ),
+        GoRoute(
+          path: Routes.addCourt,
+          name: Routes.addCourtName,
+          builder: (context, state) =>
+              const Scaffold(body: Center(child: Text('Add court form'))),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+          _noCityChosen,
+          nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
+            yield const [];
+          }),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
     await tester.pump();
 
-    expect(invalidated, true);
+    await tester.tap(find.text(AppStrings.addFirstCourt));
+    await tester.pumpAndSettle();
+
+    // A second door into the form must not be a way around the gate.
+    expect(find.byType(TermsOfUsePage), findsOneWidget);
+    expect(find.text('Add court form'), findsNothing);
   });
 
   testWidgets('shows a human-readable error with a working retry button', (

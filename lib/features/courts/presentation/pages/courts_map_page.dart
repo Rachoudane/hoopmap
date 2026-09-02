@@ -14,6 +14,7 @@ import '../../../../core/router/routes.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../domain/court_with_distance.dart';
 import '../../domain/geo_bounds.dart';
+import '../add_court_flow.dart';
 import '../browse_city_provider.dart';
 import '../court_error_messages.dart';
 import '../map_courts_provider.dart';
@@ -382,11 +383,13 @@ class _MapStatusBanner extends ConsumerWidget {
           null => onReload,
         },
       ),
+      // Nothing here is an invitation, not a dead end: the user is looking
+      // at a place they know well enough to have panned to.
       AsyncData(value: final courts) when courts.isEmpty => _BannerCard(
         icon: Icons.sports_basketball_outlined,
         message: AppStrings.noCourtsNearbyMapMessage,
-        actionLabel: AppStrings.refresh,
-        onAction: onReload,
+        actionLabel: AppStrings.addACourt,
+        onAction: () => openAddCourtFlow(context, ref),
       ),
       _ => const SizedBox.shrink(),
     };

@@ -53,6 +53,14 @@ Two of those failures cannot be fixed by retrying, because the setting that bloc
 
 `AddCourtPage` keeps a single source of truth for the position (the latitude/longitude text controllers), fed by three equivalent paths: the map (`LocationPickerMap`, a reticle fixed at its center, `onPositionChanged` from the underlying `FlutterMap`), the "My current location" button (`LocationService`), and manual entry (collapsed inside an `ExpansionTile` with `maintainState: true`, so its validators stay active even while collapsed). The submit button stays disabled until an initial position is known.
 
+## The empty state as an invitation
+
+A search that finds nothing is the app's best moment to ask for a contribution: the user is looking at a place they know, and has just been told nobody has mapped it. So "no courts" leads with `Add the first court` (Refresh moves below it), and the map's empty banner offers the same thing.
+
+Both go through `openAddCourtFlow` (`features/courts/presentation/add_court_flow.dart`) rather than pushing the route themselves — the Terms of Use gate the first submission, and a second door into the form must not become a way around it.
+
+The message names where it means. `browsingAreaProvider` answers "where is the user looking?" from the picked city or the panned map bounds (null meaning "wherever they are"), so an empty result reads as "nothing within 5 km of Lyon" rather than "nothing near you" to someone browsing another city. The same provider gives `AddCourtPage`'s picker its starting point when there is no position: coming from "nothing around Tokyo" and landing on Paris would mean panning across the world to say what the app already knew.
+
 ## Browsing without a location
 
 A user who declines the location — or has no fix — still has an app. Two things make that true.

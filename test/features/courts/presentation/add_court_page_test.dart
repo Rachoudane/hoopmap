@@ -10,9 +10,11 @@ import 'package:hoopmap/core/location/location_service.dart';
 import 'package:hoopmap/core/location/location_opt_in.dart';
 import 'package:hoopmap/core/router/routes.dart';
 import 'package:hoopmap/features/courts/data/court_repository_provider.dart';
+import 'package:hoopmap/features/courts/domain/city.dart';
 import 'package:hoopmap/features/courts/domain/court.dart';
 import 'package:hoopmap/features/courts/domain/court_repository.dart';
 import 'package:hoopmap/features/courts/domain/geo_bounds.dart';
+import 'package:hoopmap/features/courts/presentation/browse_city_provider.dart';
 import 'package:hoopmap/features/courts/presentation/pages/add_court_page.dart';
 import 'package:hoopmap/features/courts/presentation/widgets/location_picker_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -112,6 +114,7 @@ Future<_FakeCourtRepository> _pumpAddCourtPage(
   WidgetTester tester, {
   LocationService? locationService,
   bool optedIntoLocation = true,
+  City? browsedCity,
 }) async {
   // The map picker pushes the rest of the form (position summary, "Saisir
   // coordinates", the submit button) below the default test surface's
@@ -147,6 +150,9 @@ Future<_FakeCourtRepository> _pumpAddCourtPage(
         locationOptInProvider.overrideWithBuild(
           (ref, notifier) => optedIntoLocation,
         ),
+        // Where the user was looking when they opened the form, which is
+        // where its picker starts when there is no position.
+        browseCityProvider.overrideWithBuild((ref, notifier) => browsedCity),
         courtRepositoryProvider.overrideWithValue(repository),
         anonymousSessionProvider.overrideWith((ref) async => 'test-uid'),
         locationServiceProvider.overrideWithValue(
@@ -330,5 +336,25 @@ void main() {
     // perfectly good fallback centre to start from.
     expect(locationService.readPositionCallCount, 0);
     expect(find.byType(LocationPickerMap), findsOneWidget);
+  });
+
+  testWidgets('the picker starts on the area the user was browsing', (
+    tester,
+  ) async {
+    final tokyo = browsableCities.firstWhere((city) => city.name == 'Tokyo');
+
+    await _pumpAddCourtPage(
+      tester,
+      optedIntoLocation: false,
+      browsedCity: tokyo,
+    );
+
+    // Someone adding a court after "nothing around Tokyo" should not have to
+    // pan there from Paris to say so.
+    final mapWidget = tester.widget<LocationPickerMap>(
+      find.byType(LocationPickerMap),
+    );
+    expect(mapWidget.initialCenter.latitude, closeTo(tokyo.latitude, 0.001));
+    expect(mapWidget.initialCenter.longitude, closeTo(tokyo.longitude, 0.001));
   });
 }

@@ -11,11 +11,14 @@ import '../../../../core/location/location_providers.dart';
 import '../../../../core/router/back_to_home_scope.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../add_court_controller.dart';
+import '../browsing_area.dart';
 import '../court_error_messages.dart';
 import '../widgets/location_picker_map.dart';
 
 // Used when the device position can't be read at all (permission denied,
 // service disabled, ...) so the map picker always has somewhere to start.
+// Last resort only: reached when the app knows neither where the user is nor
+// where they were looking.
 const LatLng _fallbackMapCenter = LatLng(48.8566, 2.3522);
 
 class AddCourtPage extends ConsumerStatefulWidget {
@@ -45,15 +48,28 @@ class _AddCourtPageState extends ConsumerState<AddCourtPage> {
     _useCurrentPosition(isInitial: true);
   }
 
+  /// Where the picker opens when there is no position to open it on: the
+  /// area the user was just looking at.
+  ///
+  /// Someone who reached this form from "no courts around Lyon" is adding a
+  /// court in Lyon, and starting them in Paris would make them pan across a
+  /// country to say so.
+  LatLng get _browsedCenter {
+    final area = ref.read(browsingAreaProvider);
+    if (area == null) return _fallbackMapCenter;
+    return LatLng(area.latitude, area.longitude);
+  }
+
   Future<void> _useCurrentPosition({bool isInitial = false}) async {
     // Opening this form is not a request for the user's location: on first
     // launch it would put the system dialog on a screen that never asked for
-    // it. Without an opt-in, the picker just starts on the fallback centre.
+    // it. Without an opt-in, the picker starts where the user was looking.
     if (isInitial) {
       if (!ref.read(locationOptInProvider)) {
+        final center = _browsedCenter;
         setState(() {
-          _setSelectedPosition(_fallbackMapCenter);
-          _initialMapCenter ??= _fallbackMapCenter;
+          _setSelectedPosition(center);
+          _initialMapCenter ??= center;
         });
         return;
       }
@@ -73,7 +89,7 @@ class _AddCourtPageState extends ConsumerState<AddCourtPage> {
     } catch (_) {
       // Position unavailable: fall back so the map picker still has a
       // starting point, and the user can place the marker manually.
-      resolved = _fallbackMapCenter;
+      resolved = _browsedCenter;
     }
     if (!mounted) return;
     setState(() {

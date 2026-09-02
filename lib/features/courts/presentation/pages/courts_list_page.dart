@@ -4,10 +4,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/presentation/widgets/app_message_view.dart';
-import '../../../../core/terms/terms_providers.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/router/routes.dart';
+import '../add_court_flow.dart';
 import '../browse_city_provider.dart';
+import '../browsing_area.dart';
 import '../nearby_courts_notifier.dart';
 import '../widgets/court_card.dart';
 import '../widgets/court_error_view.dart';
@@ -15,22 +16,6 @@ import '../widgets/court_list_skeleton.dart';
 
 class CourtsListPage extends ConsumerWidget {
   const CourtsListPage({super.key});
-
-  // The Terms of Use must be accepted before the first court submission,
-  // and there's no bypass: this FAB is the only in-app entry point to
-  // AddCourtPage (its route isn't reachable via the hoopmap:// deep link,
-  // see android/app/src/main/AndroidManifest.xml). Already-accepted users
-  // go straight to the form, matching the previous behavior exactly.
-  Future<void> _handleAddCourt(BuildContext context, WidgetRef ref) async {
-    if (ref.read(termsAcceptedProvider)) {
-      context.pushNamed(Routes.addCourtName);
-      return;
-    }
-    final accepted = await context.pushNamed<bool>(Routes.termsAcceptName);
-    if (accepted == true && context.mounted) {
-      context.pushNamed(Routes.addCourtName);
-    }
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -60,7 +45,7 @@ class CourtsListPage extends ConsumerWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _handleAddCourt(context, ref),
+        onPressed: () => openAddCourtFlow(context, ref),
         tooltip: AppStrings.addCourtTooltip,
         child: const Icon(Icons.add),
       ),
@@ -72,12 +57,26 @@ class CourtsListPage extends ConsumerWidget {
         ),
         data: (courts) {
           if (courts.isEmpty) {
+            final area = ref.watch(browsingAreaProvider);
+
+            // An empty search is the app's best moment to ask for a
+            // contribution: the user is looking at a place they know, and
+            // they have just been told nobody has mapped it. Refreshing is
+            // the weaker answer, so it moves below.
             return AppEmptyView(
               icon: Icons.sports_basketball_outlined,
               title: AppStrings.noCourtsNearbyTitle,
-              message: AppStrings.noCourtsNearbyListMessage,
-              actionLabel: AppStrings.refresh,
-              onAction: () => ref.invalidate(nearbyCourtsProvider),
+              message: switch (area) {
+                null => AppStrings.noCourtsNearbyListMessage,
+                BrowsingArea(cityName: final name?) =>
+                  AppStrings.noCourtsAroundListMessage(name),
+                _ => AppStrings.noCourtsInAreaListMessage,
+              },
+              actionLabel: AppStrings.addFirstCourt,
+              actionIcon: Icons.add_location_alt_outlined,
+              onAction: () => openAddCourtFlow(context, ref),
+              secondaryActionLabel: AppStrings.refresh,
+              onSecondaryAction: () => ref.invalidate(nearbyCourtsProvider),
             );
           }
           return RefreshIndicator(
