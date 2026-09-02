@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hoopmap/core/location/location_opt_in.dart';
 import 'package:hoopmap/core/location/pages/location_rationale_page.dart';
 import 'package:hoopmap/core/router/routes.dart';
+import 'package:hoopmap/core/settings/pages/settings_page.dart';
 import 'package:hoopmap/core/terms/pages/terms_of_use_page.dart';
 import 'package:hoopmap/features/courts/domain/city.dart';
 import 'package:hoopmap/core/location/location_providers.dart';
@@ -302,10 +303,13 @@ void main() {
 
     // "Nothing near you" would be a lie for someone browsing another city.
     expect(
-      find.text(AppStrings.noCourtsAroundListMessage('Lyon')),
+      find.text(AppStrings.noCourtsAroundListMessage('Lyon', '5 km')),
       findsOneWidget,
     );
-    expect(find.text(AppStrings.noCourtsNearbyListMessage), findsNothing);
+    expect(
+      find.text(AppStrings.noCourtsNearbyListMessage('5 km')),
+      findsNothing,
+    );
   });
 
   testWidgets('the invitation still gates on the Terms of Use', (tester) async {
@@ -608,4 +612,43 @@ void main() {
       expect(find.text(AppStrings.addCourtTitle), findsOneWidget);
     },
   );
+
+  testWidgets('the app bar opens the settings screen', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarding_completed': true});
+    final sharedPreferences = await SharedPreferences.getInstance();
+    final router = GoRouter(
+      initialLocation: Routes.home,
+      routes: [
+        GoRoute(
+          path: Routes.home,
+          builder: (context, state) => const CourtsListPage(),
+        ),
+        GoRoute(
+          path: Routes.settings,
+          name: Routes.settingsName,
+          builder: (context, state) => const SettingsPage(),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+          _noCityChosen,
+          nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
+            yield const [];
+          }),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byTooltip(AppStrings.settingsTooltip));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SettingsPage), findsOneWidget);
+  });
 }

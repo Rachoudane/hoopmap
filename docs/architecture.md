@@ -21,6 +21,14 @@ The router (`core/router/app_router.dart`) has two notable features:
 
 Since a court detail page can also be opened directly by a cold deep link (with no existing navigation stack), `core/router/back_to_home_scope.dart` intercepts back navigation (button or system gesture) via `PopScope`: if there's something to pop, it pops normally; otherwise, it navigates explicitly to home.
 
+## Settings
+
+`core/settings/` holds the two decisions the app makes for the user and can get wrong: the theme it guessed (`themeModeProvider`, read by `HoopmapApp`) and the radius it picked (`searchRadiusProvider`, read by `NearbyCourtsNotifier` and named in the empty state's message). Both are persisted in `shared_preferences` and both defend themselves against a stored value they can't honour — an unknown theme name falls back to "follow the system", a radius that isn't one of `searchRadiusChoices` falls back to 5 km, because an area no control can explain is worse than the one it can. The theme is stored by enum *name*, not index, so reordering `ThemeMode` upstream can't silently turn someone's "dark" into "light".
+
+The rest of the screen is read-only by design: which language the app speaks (English only, said out loud rather than left as an absence), whose data it shows, the Terms of Use, and the build. `AppInfo` keeps the version by hand rather than pulling in a plugin for one line of text; a test reads `pubspec.yaml` and fails if the two ever drift.
+
+The Terms of Use moved into this screen, so the list's app bar carries one icon instead of two.
+
 ## Asking for the location
 
 The system permission dialog is the most consequential thing the app ever asks for, and it can only be asked well once: a user shown what Hoopmap is for says yes for a reason, while one who meets the dialog on a screen they haven't read says no to be rid of it — and Android remembers that second answer far better than the app can recover from it.
@@ -120,5 +128,5 @@ No test in the project makes a real network call or a real Firebase call:
 
 - **Dependency on Overpass**: the app relies entirely on the public Overpass instances and their usage policy (30 s timeout, capped queried-area size). It falls back across three community mirrors (see below), but if all of them are unavailable or rate-limiting, searching OpenStreetMap courts fails.
 - **No disk cache**: every search re-triggers an Overpass request and a Firestore request; no response is persisted locally between sessions.
-- **Fixed search radius on the list**: `NearbyCourtsNotifier` always queries a 5,000-meter radius around the user's position; this radius is neither configurable by the user nor adjusted for court density. The map escapes it by searching its own viewport, but only from the first pan onwards, and only for the map.
+- **Search radius is a fixed set of choices**: the list queries one of five radii (1–20 km, default 5 km) around the user or the city they picked; it is not adjusted for court density, and values between the offered ones aren't reachable. The map escapes the radius entirely by searching its own viewport, but only from the first pan onwards.
 - **No moderation**: `AddCourtController` writes directly to Firestore as soon as the form is valid. Nothing filters, flags, or verifies a submission before it's visible to every user.

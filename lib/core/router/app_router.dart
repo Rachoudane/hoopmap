@@ -8,6 +8,7 @@ import '../../features/courts/presentation/pages/courts_map_page.dart';
 import '../../features/courts/presentation/pages/pick_city_page.dart';
 import '../location/pages/location_rationale_page.dart';
 import '../onboarding/onboarding_providers.dart';
+import '../settings/pages/settings_page.dart';
 import '../onboarding/pages/onboarding_page.dart';
 import '../presentation/pages/app_shell.dart';
 import '../presentation/pages/not_found_page.dart';
@@ -92,6 +93,11 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((ref) {
         path: Routes.locationRationale,
         name: Routes.locationRationaleName,
         builder: (context, state) => const LocationRationalePage(),
+      ),
+      GoRoute(
+        path: Routes.settings,
+        name: Routes.settingsName,
+        builder: (context, state) => const SettingsPage(),
       ),
       GoRoute(
         path: Routes.terms,

@@ -116,15 +116,18 @@ abstract final class AppStrings {
   static const courtsListTitle = 'Nearby courts';
   static const addCourtTooltip = 'Add a court';
   static const noCourtsNearbyTitle = 'No courts here yet';
-  static const noCourtsNearbyListMessage =
-      'Nothing within 5 km of you. Be the first to put a court on the map — '
-      'it takes a name, a pin and about a minute.';
-  static String noCourtsAroundListMessage(String place) =>
-      'Nothing within 5 km of $place. Be the first to put a court on the map '
+  // The radius is a setting, so the message has to say the one in force
+  // rather than the one the app happened to ship with.
+  static String noCourtsNearbyListMessage(String radius) =>
+      'Nothing within $radius of you. Be the first to put a court on the map '
       '— it takes a name, a pin and about a minute.';
-  static const noCourtsInAreaListMessage =
-      'Nothing within 5 km of the area you are looking at. Be the first to '
-      'put a court on the map — it takes a name, a pin and about a minute.';
+  static String noCourtsAroundListMessage(String place, String radius) =>
+      'Nothing within $radius of $place. Be the first to put a court on the '
+      'map — it takes a name, a pin and about a minute.';
+  static String noCourtsInAreaListMessage(String radius) =>
+      'Nothing within $radius of the area you are looking at. Be the first '
+      'to put a court on the map — it takes a name, a pin and about a '
+      'minute.';
   static const addFirstCourt = 'Add the first court';
 
   // Courts map page
@@ -177,8 +180,43 @@ abstract final class AppStrings {
       ? 'Photo: $author · Wikimedia Commons ($licenseShortName)'
       : 'Photo: $author · Wikimedia Commons';
 
+  // Settings
+  static const settingsTitle = 'Settings';
+  static const settingsTooltip = 'Settings';
+  static const settingsAppearanceSection = 'Appearance';
+  static const settingsThemeSystem = 'Follow the system';
+  static const settingsThemeLight = 'Light';
+  static const settingsThemeDark = 'Dark';
+  static const settingsSearchSection = 'Search';
+  static const settingsSearchRadiusTitle = 'Search radius';
+  static const settingsSearchRadiusSubtitle =
+      'How far around you (or the city you picked) Hoopmap looks for courts.';
+  static String settingsRadiusLabel(double meters) {
+    final km = meters / 1000;
+    return km == km.roundToDouble() ? '${km.round()} km' : '$km km';
+  }
+
+  static const settingsLanguageSection = 'Language';
+  static const settingsLanguageTitle = 'English';
+  static const settingsLanguageSubtitle =
+      'Hoopmap ships in English only for now. Court names come from '
+      'OpenStreetMap in whatever language they were mapped.';
+  static const settingsLegalSection = 'Legal';
+  static const settingsTermsTitle = 'Terms of Use';
+  static const settingsTermsSubtitle =
+      'The rules for adding courts and reporting content.';
+  static const settingsAttributionTitle = 'Map data and attribution';
+  static const settingsAttributionSubtitle =
+      'Court data and map tiles © OpenStreetMap contributors, available '
+      'under the Open Database License (ODbL). Court photos come from '
+      'Wikimedia Commons, credited to their authors.';
+  static const settingsAboutSection = 'About';
+  static String settingsVersion(String version) => 'Version $version';
+  static const settingsAboutSubtitle =
+      'Find basketball courts wherever you are, from OpenStreetMap and '
+      'contributions by other players.';
+
   // Terms of Use
-  static const termsOfUseTooltip = 'Terms of Use';
   static const termsOfUseTitle = 'Terms of Use';
   static String termsOfUseEffectiveDate(String date) => 'Effective date: $date';
   static const termsGateIntro =

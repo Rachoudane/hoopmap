@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/presentation/widgets/app_message_view.dart';
+import '../../../../core/settings/settings_providers.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/router/routes.dart';
 import '../add_court_flow.dart';
@@ -38,9 +39,9 @@ class CourtsListPage extends ConsumerWidget {
             onPressed: () => context.pushNamed(Routes.pickCityName),
           ),
           IconButton(
-            icon: const Icon(Icons.description_outlined),
-            tooltip: AppStrings.termsOfUseTooltip,
-            onPressed: () => context.pushNamed(Routes.termsName),
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: AppStrings.settingsTooltip,
+            onPressed: () => context.pushNamed(Routes.settingsName),
           ),
         ],
       ),
@@ -58,6 +59,9 @@ class CourtsListPage extends ConsumerWidget {
         data: (courts) {
           if (courts.isEmpty) {
             final area = ref.watch(browsingAreaProvider);
+            final radius = AppStrings.settingsRadiusLabel(
+              ref.watch(searchRadiusProvider),
+            );
 
             // An empty search is the app's best moment to ask for a
             // contribution: the user is looking at a place they know, and
@@ -67,10 +71,10 @@ class CourtsListPage extends ConsumerWidget {
               icon: Icons.sports_basketball_outlined,
               title: AppStrings.noCourtsNearbyTitle,
               message: switch (area) {
-                null => AppStrings.noCourtsNearbyListMessage,
+                null => AppStrings.noCourtsNearbyListMessage(radius),
                 BrowsingArea(cityName: final name?) =>
-                  AppStrings.noCourtsAroundListMessage(name),
-                _ => AppStrings.noCourtsInAreaListMessage,
+                  AppStrings.noCourtsAroundListMessage(name, radius),
+                _ => AppStrings.noCourtsInAreaListMessage(radius),
               },
               actionLabel: AppStrings.addFirstCourt,
               actionIcon: Icons.add_location_alt_outlined,

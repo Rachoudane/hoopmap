@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoopmap/core/location/location_opt_in.dart';
 import 'package:hoopmap/core/location/location_providers.dart';
+import 'package:hoopmap/core/settings/settings_providers.dart';
 import 'package:hoopmap/core/location/location_service.dart';
 import 'package:hoopmap/features/courts/data/court_repository_provider.dart';
 import 'package:hoopmap/features/courts/domain/court.dart';
@@ -19,6 +20,11 @@ import 'package:hoopmap/features/courts/presentation/nearby_courts_notifier.dart
 final _fromTheUsersOwnPosition = [
   locationOptInProvider.overrideWithBuild((ref, notifier) => true),
   browseCityProvider.overrideWithBuild((ref, notifier) => null),
+  // The shipped radius: these tests are about what the search does with an
+  // area, not about which one the user picked.
+  searchRadiusProvider.overrideWithBuild(
+    (ref, notifier) => defaultSearchRadiusInMeters,
+  ),
 ];
 
 class FakeLocationService extends LocationService {
@@ -67,10 +73,13 @@ class FakeCourtRepository implements CourtRepository {
   FakeCourtRepository(this._controller);
 
   final StreamController<List<Court>> _controller;
+  final List<GeoBounds> requestedBounds = [];
 
   @override
-  Stream<List<Court>> watchCourtsInBounds(GeoBounds bounds) =>
-      _controller.stream;
+  Stream<List<Court>> watchCourtsInBounds(GeoBounds bounds) {
+    requestedBounds.add(bounds);
+    return _controller.stream;
+  }
 
   @override
   Stream<Court> watchCourt(String id) => Stream.error(UnimplementedError());
@@ -275,6 +284,37 @@ void main() {
       controller.add([_court('c', 0.005, 0), _court('a', 0.02, 0)]);
       await secondEmission.future;
       expect(emissions[1].map((c) => c.court.id).toList(), ['c', 'a']);
+    });
+
+    test('the searched area follows the radius the user picked', () async {
+      // Single-subscription, so the emission waits for the notifier to
+      // subscribe rather than being dropped before it does.
+      final controller = StreamController<List<Court>>();
+      final repository = FakeCourtRepository(controller);
+      final container = ProviderContainer(
+        overrides: [
+          locationOptInProvider.overrideWithBuild((ref, notifier) => true),
+          browseCityProvider.overrideWithBuild((ref, notifier) => null),
+          searchRadiusProvider.overrideWithBuild((ref, notifier) => 20000),
+          locationServiceProvider.overrideWithValue(
+            FakeLocationService.position(
+              const UserPosition(latitude: 0, longitude: 0),
+            ),
+          ),
+          courtRepositoryProvider.overrideWithValue(repository),
+        ],
+      );
+      addTearDown(container.dispose);
+      addTearDown(controller.close);
+      container.listen(nearbyCourtsProvider, (previous, next) {});
+
+      final future = container.read(nearbyCourtsProvider.future);
+      controller.add(const []);
+      await future;
+
+      // 20 km either side of the equator, in degrees of latitude.
+      final bounds = repository.requestedBounds.single;
+      expect(bounds.maxLat - bounds.minLat, closeTo(0.36, 0.01));
     });
   });
 }

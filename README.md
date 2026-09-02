@@ -14,6 +14,7 @@ A Flutter app that helps you find basketball courts wherever you are in the worl
 - Searches OpenStreetMap courts on the fly in the relevant geographic area rather than from a preloaded database, so it works anywhere in the world.
 - Merges those results with courts added by users, stored in Firestore.
 - Shows a detail page per court (name, hoop count, indoor/outdoor, coordinates), also reachable by deep link, with its photo when a usable Wikimedia Commons source exists (see [Court photos](#court-photos)).
+- Has a settings screen for the theme (system/light/dark) and the search radius (1–20 km), plus the Terms of Use, data attribution, and the build number.
 - Offers a "Directions" button that opens the phone's map application on the court's coordinates.
 - Turns an empty result into an invitation: "no courts here yet" leads with adding the first one, and the form opens on the area that was being browsed.
 - Lets users add a court (name, hoop count, indoor/outdoor, position chosen on a map or from GPS) via a form, after automatic anonymous authentication.

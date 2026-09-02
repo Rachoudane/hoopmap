@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hoopmap/core/location/location_opt_in.dart';
 import 'package:hoopmap/core/location/pages/location_rationale_page.dart';
 import 'package:hoopmap/core/onboarding/onboarding_providers.dart';
+import 'package:hoopmap/core/settings/settings_providers.dart';
 import 'package:hoopmap/core/router/routes.dart';
 import 'package:hoopmap/core/location/location_providers.dart';
 import 'package:hoopmap/core/location/location_service.dart';
@@ -42,6 +43,11 @@ Court _courtAt(String id, String name, double latitude, double longitude) =>
 final _fromTheUsersOwnPosition = [
   locationOptInProvider.overrideWithBuild((ref, notifier) => true),
   _noCityChosen,
+  // The shipped radius: what the map does with an area is the subject here,
+  // not which radius the user picked.
+  searchRadiusProvider.overrideWithBuild(
+    (ref, notifier) => defaultSearchRadiusInMeters,
+  ),
 ];
 
 /// No city picked, so the map is about the user's own surroundings.
