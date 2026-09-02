@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_strings.dart';
+import '../../presentation/widgets/readable_width.dart';
 import '../../theme/app_spacing.dart';
 
 /// What the app is about to ask the system for, and why, before the system
@@ -35,96 +36,101 @@ class LocationRationalePage extends StatelessWidget {
       appBar: AppBar(),
       body: SafeArea(
         top: false,
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.xl,
-                  vertical: AppSpacing.lg,
+        child: ReadableWidth(
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xl,
+                    vertical: AppSpacing.lg,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 96,
+                          height: 96,
+                          decoration: BoxDecoration(
+                            color: colorScheme.primary.withValues(alpha: 0.14),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.my_location,
+                            size: 44,
+                            color: colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+                      Text(
+                        AppStrings.locationRationaleTitle,
+                        style: textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        AppStrings.locationRationaleIntro,
+                        style: textTheme.bodyLarge?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+                      for (final (icon, reason) in _reasons)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(icon, color: colorScheme.primary),
+                              const SizedBox(width: AppSpacing.md),
+                              Expanded(
+                                child: Text(
+                                  reason,
+                                  style: textTheme.bodyMedium,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      const SizedBox(height: AppSpacing.sm),
+                      // Says what happens next, so the system dialog arrives as
+                      // the expected consequence of a button rather than as an
+                      // interruption.
+                      Text(
+                        AppStrings.locationRationaleNextStep,
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Center(
-                      child: Container(
-                        width: 96,
-                        height: 96,
-                        decoration: BoxDecoration(
-                          color: colorScheme.primary.withValues(alpha: 0.14),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.my_location,
-                          size: 44,
-                          color: colorScheme.primary,
-                        ),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () => context.pop(true),
+                        child: const Text(AppStrings.locationRationaleAllow),
                       ),
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
-                    Text(
-                      AppStrings.locationRationaleTitle,
-                      style: textTheme.headlineSmall,
                     ),
                     const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      AppStrings.locationRationaleIntro,
-                      style: textTheme.bodyLarge?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
-                    for (final (icon, reason) in _reasons)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Icon(icon, color: colorScheme.primary),
-                            const SizedBox(width: AppSpacing.md),
-                            Expanded(
-                              child: Text(reason, style: textTheme.bodyMedium),
-                            ),
-                          ],
-                        ),
-                      ),
-                    const SizedBox(height: AppSpacing.sm),
-                    // Says what happens next, so the system dialog arrives as
-                    // the expected consequence of a button rather than as an
-                    // interruption.
-                    Text(
-                      AppStrings.locationRationaleNextStep,
-                      style: textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
+                    SizedBox(
+                      width: double.infinity,
+                      child: TextButton(
+                        onPressed: () => context.pop(false),
+                        child: const Text(AppStrings.locationRationaleNotNow),
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: Column(
-                children: [
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => context.pop(true),
-                      child: const Text(AppStrings.locationRationaleAllow),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  SizedBox(
-                    width: double.infinity,
-                    child: TextButton(
-                      onPressed: () => context.pop(false),
-                      child: const Text(AppStrings.locationRationaleNotNow),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

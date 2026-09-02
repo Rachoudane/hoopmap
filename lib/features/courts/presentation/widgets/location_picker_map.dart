@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
+import 'map_attribution.dart';
+
 /// A map with a reticle fixed at its visual center: panning the map moves
 /// the target underneath it, which [onCenterChanged] reports as the
 /// candidate position for the new court. A symmetric crosshair (rather
@@ -40,23 +42,7 @@ class LocationPickerMap extends StatelessWidget {
               urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
               userAgentPackageName: 'com.rachoucorp.hoopmap',
             ),
-            // A plain Text rather than SimpleAttributionWidget: this map is
-            // embedded in a narrower container (inside a form, not full
-            // screen), and SimpleAttributionWidget's Row-based layout would
-            // overflow there. This one clips gracefully instead.
-            Align(
-              alignment: Alignment.bottomLeft,
-              child: Container(
-                color: Colors.black.withValues(alpha: 0.55),
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                child: const Text(
-                  '© OpenStreetMap',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: Colors.white, fontSize: 11),
-                ),
-              ),
-            ),
+            const MapAttribution(),
           ],
         ),
         IgnorePointer(

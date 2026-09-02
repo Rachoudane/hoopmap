@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_strings.dart';
 import '../../router/routes.dart';
+import '../../presentation/widgets/readable_width.dart';
 import '../../theme/app_spacing.dart';
 import '../app_info.dart';
 import '../settings_providers.dart';
@@ -27,112 +28,114 @@ class SettingsPage extends ConsumerWidget {
       appBar: AppBar(title: const Text(AppStrings.settingsTitle)),
       body: SafeArea(
         top: false,
-        child: ListView(
-          padding: const EdgeInsets.only(bottom: AppSpacing.xl),
-          children: [
-            const _SectionHeader(AppStrings.settingsAppearanceSection),
-            RadioGroup<ThemeMode>(
-              groupValue: themeMode,
-              onChanged: (selected) {
-                if (selected != null) {
-                  ref.read(themeModeProvider.notifier).set(selected);
-                }
-              },
-              child: const Column(
-                children: [
-                  RadioListTile<ThemeMode>(
-                    value: ThemeMode.system,
-                    title: Text(AppStrings.settingsThemeSystem),
-                  ),
-                  RadioListTile<ThemeMode>(
-                    value: ThemeMode.light,
-                    title: Text(AppStrings.settingsThemeLight),
-                  ),
-                  RadioListTile<ThemeMode>(
-                    value: ThemeMode.dark,
-                    title: Text(AppStrings.settingsThemeDark),
-                  ),
-                ],
-              ),
-            ),
-
-            const Divider(),
-            const _SectionHeader(AppStrings.settingsSearchSection),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    AppStrings.settingsSearchRadiusTitle,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    AppStrings.settingsSearchRadiusSubtitle,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+        child: ReadableWidth(
+          child: ListView(
+            padding: const EdgeInsets.only(bottom: AppSpacing.xl),
+            children: [
+              const _SectionHeader(AppStrings.settingsAppearanceSection),
+              RadioGroup<ThemeMode>(
+                groupValue: themeMode,
+                onChanged: (selected) {
+                  if (selected != null) {
+                    ref.read(themeModeProvider.notifier).set(selected);
+                  }
+                },
+                child: const Column(
+                  children: [
+                    RadioListTile<ThemeMode>(
+                      value: ThemeMode.system,
+                      title: Text(AppStrings.settingsThemeSystem),
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Wrap(
-                    spacing: AppSpacing.sm,
-                    children: [
-                      for (final choice in searchRadiusChoices)
-                        ChoiceChip(
-                          label: Text(AppStrings.settingsRadiusLabel(choice)),
-                          selected: choice == radius,
-                          onSelected: (selected) {
-                            if (selected) {
-                              ref
-                                  .read(searchRadiusProvider.notifier)
-                                  .set(choice);
-                            }
-                          },
-                        ),
-                    ],
-                  ),
-                ],
+                    RadioListTile<ThemeMode>(
+                      value: ThemeMode.light,
+                      title: Text(AppStrings.settingsThemeLight),
+                    ),
+                    RadioListTile<ThemeMode>(
+                      value: ThemeMode.dark,
+                      title: Text(AppStrings.settingsThemeDark),
+                    ),
+                  ],
+                ),
               ),
-            ),
 
-            const Divider(height: AppSpacing.xxl),
-            const _SectionHeader(AppStrings.settingsLanguageSection),
-            // Not a choice, and shown anyway: someone looking for their own
-            // language deserves an answer rather than an absence.
-            const ListTile(
-              leading: Icon(Icons.translate),
-              title: Text(AppStrings.settingsLanguageTitle),
-              subtitle: Text(AppStrings.settingsLanguageSubtitle),
-            ),
+              const Divider(),
+              const _SectionHeader(AppStrings.settingsSearchSection),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      AppStrings.settingsSearchRadiusTitle,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      AppStrings.settingsSearchRadiusSubtitle,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Wrap(
+                      spacing: AppSpacing.sm,
+                      children: [
+                        for (final choice in searchRadiusChoices)
+                          ChoiceChip(
+                            label: Text(AppStrings.settingsRadiusLabel(choice)),
+                            selected: choice == radius,
+                            onSelected: (selected) {
+                              if (selected) {
+                                ref
+                                    .read(searchRadiusProvider.notifier)
+                                    .set(choice);
+                              }
+                            },
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
 
-            const Divider(),
-            const _SectionHeader(AppStrings.settingsLegalSection),
-            ListTile(
-              leading: const Icon(Icons.description_outlined),
-              title: const Text(AppStrings.settingsTermsTitle),
-              subtitle: const Text(AppStrings.settingsTermsSubtitle),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => context.pushNamed(Routes.termsName),
-            ),
-            const ListTile(
-              leading: Icon(Icons.public),
-              title: Text(AppStrings.settingsAttributionTitle),
-              subtitle: Text(AppStrings.settingsAttributionSubtitle),
-            ),
+              const Divider(height: AppSpacing.xxl),
+              const _SectionHeader(AppStrings.settingsLanguageSection),
+              // Not a choice, and shown anyway: someone looking for their own
+              // language deserves an answer rather than an absence.
+              const ListTile(
+                leading: Icon(Icons.translate),
+                title: Text(AppStrings.settingsLanguageTitle),
+                subtitle: Text(AppStrings.settingsLanguageSubtitle),
+              ),
 
-            const Divider(),
-            const _SectionHeader(AppStrings.settingsAboutSection),
-            const ListTile(
-              leading: Icon(Icons.sports_basketball),
-              title: Text(AppInfo.name),
-              subtitle: Text(AppStrings.settingsAboutSubtitle),
-            ),
-            ListTile(
-              leading: const Icon(Icons.info_outline),
-              title: Text(AppStrings.settingsVersion(AppInfo.versionLabel)),
-            ),
-          ],
+              const Divider(),
+              const _SectionHeader(AppStrings.settingsLegalSection),
+              ListTile(
+                leading: const Icon(Icons.description_outlined),
+                title: const Text(AppStrings.settingsTermsTitle),
+                subtitle: const Text(AppStrings.settingsTermsSubtitle),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.pushNamed(Routes.termsName),
+              ),
+              const ListTile(
+                leading: Icon(Icons.public),
+                title: Text(AppStrings.settingsAttributionTitle),
+                subtitle: Text(AppStrings.settingsAttributionSubtitle),
+              ),
+
+              const Divider(),
+              const _SectionHeader(AppStrings.settingsAboutSection),
+              const ListTile(
+                leading: Icon(Icons.sports_basketball),
+                title: Text(AppInfo.name),
+                subtitle: Text(AppStrings.settingsAboutSubtitle),
+              ),
+              ListTile(
+                leading: const Icon(Icons.info_outline),
+                title: Text(AppStrings.settingsVersion(AppInfo.versionLabel)),
+              ),
+            ],
+          ),
         ),
       ),
     );

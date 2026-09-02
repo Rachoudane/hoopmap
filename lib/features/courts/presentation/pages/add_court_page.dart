@@ -8,6 +8,7 @@ import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/location/location_opt_in.dart';
 import '../../../../core/location/location_opt_in_flow.dart';
 import '../../../../core/location/location_providers.dart';
+import '../../../../core/presentation/widgets/readable_width.dart';
 import '../../../../core/router/back_to_home_scope.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../add_court_controller.dart';
@@ -155,236 +156,245 @@ class _AddCourtPageState extends ConsumerState<AddCourtPage> {
         // behind the system navigation bar on devices with 3-button nav.
         body: SafeArea(
           top: false,
-          child: Form(
-            key: _formKey,
-            child: ListView(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              children: [
-                Text(
-                  AppStrings.informationSectionTitle,
-                  style: textTheme.titleMedium,
-                ),
-                const SizedBox(height: AppSpacing.md),
-                TextFormField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(
-                    labelText: AppStrings.courtNameLabel,
-                    hintText: AppStrings.courtNameHint,
+          child: ReadableWidth(
+            child: Form(
+              key: _formKey,
+              child: ListView(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                children: [
+                  Text(
+                    AppStrings.informationSectionTitle,
+                    style: textTheme.titleMedium,
                   ),
-                  textCapitalization: TextCapitalization.sentences,
-                  validator: (value) {
-                    final length = value?.trim().length ?? 0;
-                    if (length < 3 || length > 60) {
-                      return AppStrings.courtNameValidation;
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                TextFormField(
-                  controller: _hoopCountController,
-                  decoration: const InputDecoration(
-                    labelText: AppStrings.hoopCountLabel,
-                  ),
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    final parsed = int.tryParse(value?.trim() ?? '');
-                    if (parsed == null || parsed < 1 || parsed > 20) {
-                      return AppStrings.hoopCountValidation;
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Card(
-                  child: SwitchListTile(
-                    title: const Text(AppStrings.outdoorCourt),
-                    subtitle: Text(
-                      _isOutdoor
-                          ? AppStrings.outdoorSubtitle
-                          : AppStrings.indoorSubtitle,
-                      style: textTheme.bodySmall,
+                  const SizedBox(height: AppSpacing.md),
+                  TextFormField(
+                    controller: _nameController,
+                    decoration: const InputDecoration(
+                      labelText: AppStrings.courtNameLabel,
+                      hintText: AppStrings.courtNameHint,
                     ),
-                    value: _isOutdoor,
-                    onChanged: (value) => setState(() => _isOutdoor = value),
+                    textCapitalization: TextCapitalization.sentences,
+                    validator: (value) {
+                      final length = value?.trim().length ?? 0;
+                      if (length < 3 || length > 60) {
+                        return AppStrings.courtNameValidation;
+                      }
+                      return null;
+                    },
                   ),
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                Text(
-                  AppStrings.locationSectionTitle,
-                  style: textTheme.titleMedium,
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(AppStrings.locationHelperText, style: textTheme.bodySmall),
-                const SizedBox(height: AppSpacing.md),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                  child: SizedBox(
-                    height: 220,
-                    child: _initialMapCenter == null
-                        ? ColoredBox(
-                            color: colorScheme.surfaceContainerHighest,
-                            child: const Center(
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          )
-                        : LocationPickerMap(
-                            mapController: _mapController,
-                            initialCenter: _initialMapCenter!,
-                            onCenterChanged: (point) =>
-                                setState(() => _setSelectedPosition(point)),
-                          ),
+                  const SizedBox(height: AppSpacing.lg),
+                  TextFormField(
+                    controller: _hoopCountController,
+                    decoration: const InputDecoration(
+                      labelText: AppStrings.hoopCountLabel,
+                    ),
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      final parsed = int.tryParse(value?.trim() ?? '');
+                      if (parsed == null || parsed < 1 || parsed > 20) {
+                        return AppStrings.hoopCountValidation;
+                      }
+                      return null;
+                    },
                   ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        _latitudeController.text.isEmpty
-                            ? AppStrings.locationToChoose
-                            : AppStrings.locationChosen(
-                                _latitudeController.text,
-                                _longitudeController.text,
+                  const SizedBox(height: AppSpacing.sm),
+                  Card(
+                    child: SwitchListTile(
+                      title: const Text(AppStrings.outdoorCourt),
+                      subtitle: Text(
+                        _isOutdoor
+                            ? AppStrings.outdoorSubtitle
+                            : AppStrings.indoorSubtitle,
+                        style: textTheme.bodySmall,
+                      ),
+                      value: _isOutdoor,
+                      onChanged: (value) => setState(() => _isOutdoor = value),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  Text(
+                    AppStrings.locationSectionTitle,
+                    style: textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    AppStrings.locationHelperText,
+                    style: textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    child: SizedBox(
+                      height: 220,
+                      child: _initialMapCenter == null
+                          ? ColoredBox(
+                              color: colorScheme.surfaceContainerHighest,
+                              child: const Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               ),
-                        style: textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
+                            )
+                          : LocationPickerMap(
+                              mapController: _mapController,
+                              initialCenter: _initialMapCenter!,
+                              onCenterChanged: (point) =>
+                                  setState(() => _setSelectedPosition(point)),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _latitudeController.text.isEmpty
+                              ? AppStrings.locationToChoose
+                              : AppStrings.locationChosen(
+                                  _latitudeController.text,
+                                  _longitudeController.text,
+                                ),
+                          style: textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ),
-                    ),
-                    TextButton.icon(
-                      onPressed: _locatingCurrentPosition
-                          ? null
-                          : () => _useCurrentPosition(),
-                      icon: _locatingCurrentPosition
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.my_location, size: 18),
-                      label: const Text(AppStrings.useCurrentLocation),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Theme(
-                  data: Theme.of(
-                    context,
-                  ).copyWith(dividerColor: Colors.transparent),
-                  child: ExpansionTile(
-                    // Keeps the lat/lng fields registered with the Form (and
-                    // thus validated on submit) even while collapsed, instead
-                    // of only once the user has expanded the tile at least
-                    // once.
-                    maintainState: true,
-                    tilePadding: EdgeInsets.zero,
-                    title: const Text(AppStrings.enterCoordinates),
-                    childrenPadding: const EdgeInsets.only(
-                      top: AppSpacing.sm,
-                      bottom: AppSpacing.sm,
-                    ),
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: _latitudeController,
-                              decoration: const InputDecoration(
-                                labelText: AppStrings.latitudeLabel,
-                              ),
-                              keyboardType:
-                                  const TextInputType.numberWithOptions(
-                                    decimal: true,
-                                    signed: true,
-                                  ),
-                              validator: (value) {
-                                final parsed = double.tryParse(
-                                  value?.trim() ?? '',
-                                );
-                                if (parsed == null ||
-                                    parsed < -90 ||
-                                    parsed > 90) {
-                                  return AppStrings.latitudeValidation;
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.md),
-                          Expanded(
-                            child: TextFormField(
-                              controller: _longitudeController,
-                              decoration: const InputDecoration(
-                                labelText: AppStrings.longitudeLabel,
-                              ),
-                              keyboardType:
-                                  const TextInputType.numberWithOptions(
-                                    decimal: true,
-                                    signed: true,
-                                  ),
-                              validator: (value) {
-                                final parsed = double.tryParse(
-                                  value?.trim() ?? '',
-                                );
-                                if (parsed == null ||
-                                    parsed < -180 ||
-                                    parsed > 180) {
-                                  return AppStrings.longitudeValidation;
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
-                        ],
+                      TextButton.icon(
+                        onPressed: _locatingCurrentPosition
+                            ? null
+                            : () => _useCurrentPosition(),
+                        icon: _locatingCurrentPosition
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.my_location, size: 18),
+                        label: const Text(AppStrings.useCurrentLocation),
                       ),
                     ],
                   ),
-                ),
-                if (submitState.hasError) ...[
-                  const SizedBox(height: AppSpacing.lg),
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    decoration: BoxDecoration(
-                      color: colorScheme.error.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                    ),
-                    child: Row(
+                  const SizedBox(height: AppSpacing.sm),
+                  Theme(
+                    data: Theme.of(
+                      context,
+                    ).copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      // Keeps the lat/lng fields registered with the Form (and
+                      // thus validated on submit) even while collapsed, instead
+                      // of only once the user has expanded the tile at least
+                      // once.
+                      maintainState: true,
+                      tilePadding: EdgeInsets.zero,
+                      title: const Text(AppStrings.enterCoordinates),
+                      childrenPadding: const EdgeInsets.only(
+                        top: AppSpacing.sm,
+                        bottom: AppSpacing.sm,
+                      ),
                       children: [
-                        Icon(Icons.error_outline, color: colorScheme.error),
-                        const SizedBox(width: AppSpacing.sm),
-                        Expanded(
-                          child: Text(
-                            courtErrorMessage(submitState.error!),
-                            style: textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.error,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: _latitudeController,
+                                decoration: const InputDecoration(
+                                  labelText: AppStrings.latitudeLabel,
+                                ),
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                      decimal: true,
+                                      signed: true,
+                                    ),
+                                validator: (value) {
+                                  final parsed = double.tryParse(
+                                    value?.trim() ?? '',
+                                  );
+                                  if (parsed == null ||
+                                      parsed < -90 ||
+                                      parsed > 90) {
+                                    return AppStrings.latitudeValidation;
+                                  }
+                                  return null;
+                                },
+                              ),
                             ),
-                          ),
+                            const SizedBox(width: AppSpacing.md),
+                            Expanded(
+                              child: TextFormField(
+                                controller: _longitudeController,
+                                decoration: const InputDecoration(
+                                  labelText: AppStrings.longitudeLabel,
+                                ),
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                      decimal: true,
+                                      signed: true,
+                                    ),
+                                validator: (value) {
+                                  final parsed = double.tryParse(
+                                    value?.trim() ?? '',
+                                  );
+                                  if (parsed == null ||
+                                      parsed < -180 ||
+                                      parsed > 180) {
+                                    return AppStrings.longitudeValidation;
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ),
-                ],
-                const SizedBox(height: AppSpacing.xl),
-                ElevatedButton(
-                  onPressed: (isSubmitting || _initialMapCenter == null)
-                      ? null
-                      : _submit,
-                  child: isSubmitting
-                      ? SizedBox(
-                          height: 20,
-                          width: 20,
-                          // The label colour of the button it sits in: white
-                          // is only right while the button is dark, which it
-                          // is not in the dark theme.
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: colorScheme.onPrimary,
+                  if (submitState.hasError) ...[
+                    const SizedBox(height: AppSpacing.lg),
+                    Container(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      decoration: BoxDecoration(
+                        color: colorScheme.error.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.error_outline, color: colorScheme.error),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: Text(
+                              courtErrorMessage(submitState.error!),
+                              style: textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.error,
+                              ),
+                            ),
                           ),
-                        )
-                      : const Text(AppStrings.submitAddCourt),
-                ),
-              ],
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: AppSpacing.xl),
+                  ElevatedButton(
+                    onPressed: (isSubmitting || _initialMapCenter == null)
+                        ? null
+                        : _submit,
+                    child: isSubmitting
+                        ? SizedBox(
+                            height: 20,
+                            width: 20,
+                            // The label colour of the button it sits in: white
+                            // is only right while the button is dark, which it
+                            // is not in the dark theme.
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: colorScheme.onPrimary,
+                            ),
+                          )
+                        : const Text(AppStrings.submitAddCourt),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

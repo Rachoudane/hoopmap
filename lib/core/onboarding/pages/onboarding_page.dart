@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -116,42 +118,64 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                 onPageChanged: (index) => setState(() => _currentPage = index),
                 itemBuilder: (context, index) {
                   final slide = _slides[index];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.xxl,
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 120,
-                          height: 120,
-                          decoration: BoxDecoration(
-                            color: colorScheme.primary.withValues(alpha: 0.14),
-                            shape: BoxShape.circle,
+                  // The slide has to survive a short screen (a phone in
+                  // landscape) and a large text setting: the illustration
+                  // gives way first, and whatever is still too tall
+                  // scrolls rather than overflowing.
+                  return LayoutBuilder(
+                    builder: (context, constraints) {
+                      final illustration = min(
+                        120.0,
+                        constraints.maxHeight * 0.3,
+                      );
+                      return SingleChildScrollView(
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: constraints.maxHeight,
                           ),
-                          child: Icon(
-                            slide.icon,
-                            size: 56,
-                            color: colorScheme.primary,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.xxl,
+                              vertical: AppSpacing.md,
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  width: illustration,
+                                  height: illustration,
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.primary.withValues(
+                                      alpha: 0.14,
+                                    ),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    slide.icon,
+                                    size: illustration * 0.47,
+                                    color: colorScheme.primary,
+                                  ),
+                                ),
+                                SizedBox(height: illustration * 0.2),
+                                Text(
+                                  slide.title,
+                                  textAlign: TextAlign.center,
+                                  style: textTheme.headlineMedium,
+                                ),
+                                const SizedBox(height: AppSpacing.md),
+                                Text(
+                                  slide.description,
+                                  textAlign: TextAlign.center,
+                                  style: textTheme.bodyLarge?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                        const SizedBox(height: AppSpacing.xxl),
-                        Text(
-                          slide.title,
-                          textAlign: TextAlign.center,
-                          style: textTheme.headlineMedium,
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        Text(
-                          slide.description,
-                          textAlign: TextAlign.center,
-                          style: textTheme.bodyLarge?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
+                      );
+                    },
                   );
                 },
               ),

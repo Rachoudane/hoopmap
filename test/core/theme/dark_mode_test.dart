@@ -189,6 +189,7 @@ void main() {
       // Over map tiles, which look the same in both themes: a scrim and its
       // label, and the shadows that lift a marker off them.
       'lib/features/courts/presentation/widgets/location_picker_map.dart',
+      'lib/features/courts/presentation/widgets/map_attribution.dart',
       'lib/features/courts/presentation/widgets/court_marker.dart',
       'lib/features/courts/presentation/widgets/court_cluster_marker.dart',
       'lib/features/courts/presentation/widgets/user_location_marker.dart',

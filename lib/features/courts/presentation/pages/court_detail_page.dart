@@ -158,11 +158,16 @@ class _CourtDetailBody extends StatelessWidget {
                         color: colorScheme.onSurfaceVariant,
                       ),
                       const SizedBox(width: AppSpacing.sm),
-                      Text(
-                        '${court.latitude.toStringAsFixed(5)}, '
-                        '${court.longitude.toStringAsFixed(5)}',
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
+                      // Expanded, because a pair of five-decimal coordinates
+                      // at the system's largest text setting is wider than a
+                      // small phone.
+                      Expanded(
+                        child: Text(
+                          '${court.latitude.toStringAsFixed(5)}, '
+                          '${court.longitude.toStringAsFixed(5)}',
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ),
                     ],

@@ -20,6 +20,7 @@ import '../court_error_messages.dart';
 import '../map_courts_provider.dart';
 import '../nearby_courts_notifier.dart';
 import '../widgets/court_markers_layer.dart';
+import '../widgets/map_attribution.dart';
 import '../widgets/court_preview_card.dart';
 import '../widgets/user_location_marker.dart';
 
@@ -276,15 +277,7 @@ class _CourtsMapPageState extends ConsumerState<CourtsMapPage> {
                 onCourtSelected: (courtWithDistance) =>
                     setState(() => _selected = courtWithDistance),
               ),
-              const Align(
-                alignment: Alignment.bottomLeft,
-                // SimpleAttributionWidget already renders
-                // 'flutter_map | © ' before source, so source itself
-                // must not repeat the © symbol.
-                child: SimpleAttributionWidget(
-                  source: Text(AppStrings.openStreetMapContributors),
-                ),
-              ),
+              const MapAttribution(),
             ],
           ),
           Positioned(

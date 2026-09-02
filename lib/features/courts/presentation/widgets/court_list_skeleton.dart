@@ -32,10 +32,15 @@ class CourtListSkeleton extends StatelessWidget {
                       height: 16,
                     ),
                     const SizedBox(height: AppSpacing.sm),
-                    const Row(
+                    // Wrap, not Row: the two pills are wider than a 320 dp
+                    // phone leaves for them, and a placeholder overflowing
+                    // is a stripe of yellow warning tape where the content
+                    // is supposed to be.
+                    const Wrap(
+                      spacing: AppSpacing.sm,
+                      runSpacing: AppSpacing.sm,
                       children: [
                         SkeletonBox(width: 80, height: 22, borderRadius: 11),
-                        SizedBox(width: AppSpacing.sm),
                         SkeletonBox(width: 70, height: 22, borderRadius: 11),
                       ],
                     ),

@@ -29,7 +29,16 @@ class CourtPill extends StatelessWidget {
         children: [
           Icon(icon, size: 14, color: colorScheme.onSurfaceVariant),
           const SizedBox(width: AppSpacing.xs),
-          Text(label, style: Theme.of(context).textTheme.labelMedium),
+          // Flexible, so a long label on a narrow phone shortens the pill
+          // instead of overflowing the card it sits in.
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.labelMedium,
+            ),
+          ),
         ],
       ),
     );

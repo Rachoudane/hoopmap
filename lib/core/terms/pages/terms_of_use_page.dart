@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_strings.dart';
+import '../../presentation/widgets/readable_width.dart';
 import '../../theme/app_spacing.dart';
 import '../terms_of_use_content.dart';
 import '../terms_providers.dart';
@@ -29,71 +30,73 @@ class TermsOfUsePage extends ConsumerWidget {
       appBar: AppBar(title: const Text(AppStrings.termsOfUseTitle)),
       body: SafeArea(
         top: false,
-        child: Column(
-          children: [
-            if (requireAcceptance)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                color: colorScheme.primary.withValues(alpha: 0.08),
-                child: Text(
-                  AppStrings.termsGateIntro,
-                  style: textTheme.bodyMedium,
+        child: ReadableWidth(
+          child: Column(
+            children: [
+              if (requireAcceptance)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  color: colorScheme.primary.withValues(alpha: 0.08),
+                  child: Text(
+                    AppStrings.termsGateIntro,
+                    style: textTheme.bodyMedium,
+                  ),
                 ),
-              ),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppSpacing.xl),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      AppStrings.termsOfUseEffectiveDate(
-                        termsOfUseEffectiveDate,
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(AppSpacing.xl),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        AppStrings.termsOfUseEffectiveDate(
+                          termsOfUseEffectiveDate,
+                        ),
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
                       ),
-                      style: textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    Text(termsOfUseIntro, style: textTheme.bodyMedium),
-                    for (final section in termsOfUseSections) ...[
-                      const SizedBox(height: AppSpacing.xl),
-                      Text(section.heading, style: textTheme.titleMedium),
-                      const SizedBox(height: AppSpacing.sm),
-                      Text(section.body, style: textTheme.bodyMedium),
+                      const SizedBox(height: AppSpacing.lg),
+                      Text(termsOfUseIntro, style: textTheme.bodyMedium),
+                      for (final section in termsOfUseSections) ...[
+                        const SizedBox(height: AppSpacing.xl),
+                        Text(section.heading, style: textTheme.titleMedium),
+                        const SizedBox(height: AppSpacing.sm),
+                        Text(section.body, style: textTheme.bodyMedium),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
-            ),
-            if (requireAcceptance)
-              Padding(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => context.pop(false),
-                        child: const Text(AppStrings.termsDecline),
+              if (requireAcceptance)
+                Padding(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => context.pop(false),
+                          child: const Text(AppStrings.termsDecline),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () async {
-                          await ref
-                              .read(termsAcceptedProvider.notifier)
-                              .accept();
-                          if (context.mounted) context.pop(true);
-                        },
-                        child: const Text(AppStrings.termsAccept),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            await ref
+                                .read(termsAcceptedProvider.notifier)
+                                .accept();
+                            if (context.mounted) context.pop(true);
+                          },
+                          child: const Text(AppStrings.termsAccept),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -21,6 +21,14 @@ The router (`core/router/app_router.dart`) has two notable features:
 
 Since a court detail page can also be opened directly by a cold deep link (with no existing navigation stack), `core/router/back_to_home_scope.dart` intercepts back navigation (button or system gesture) via `PopScope`: if there's something to pop, it pops normally; otherwise, it navigates explicitly to home.
 
+## Fitting every screen
+
+`test/core/responsive_test.dart` builds every screen at four shapes — a 320x568 phone, a phone in landscape, a tablet either way up — plus a small phone at 1.5x text, and fails on any overflow. Flutter reports overflow as an exception in tests, so "nothing overflowed" is something a test can assert, unlike "it looked fine on my phone".
+
+That sweep found five real breakages: the loading skeleton's two pills were wider than a 320 dp phone leaves them; `CourtPill` overflowed its card with a long label; the onboarding slide didn't fit a short screen; the coordinates on a court's detail page overflowed at large text; and flutter_map's own `SimpleAttributionWidget` overflowed the map by 285 px — an attribution the app is legally required to show, replaced by warning stripes. The fixes are in the widgets themselves (`Wrap`, `Flexible`, a scrollable slide with an illustration that gives way first, `MapAttribution`).
+
+Wide screens get the opposite treatment. `ReadableWidth` (`core/presentation/widgets/`) caps content at 640 logical pixels and centres it, because a paragraph or a form field stretched across a 1112 px tablet is a line the eye loses halfway. It wraps the list, the settings, the forms and the reading screens; the map is deliberately left out, being the one thing in the app that wants every pixel.
+
 ## Dark mode, kept honest
 
 The palette lives in `core/theme/app_colors.dart` and every widget reads its colours from `Theme.of(context).colorScheme`. Three tests keep that true rather than aspirational:

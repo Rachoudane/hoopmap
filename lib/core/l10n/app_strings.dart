@@ -136,6 +136,7 @@ abstract final class AppStrings {
   static const noCourtsNearbyMapMessage = 'No courts in this area yet.';
   static const addACourt = 'Add a court';
   static const openStreetMapContributors = 'OpenStreetMap contributors';
+  static const openStreetMapAttribution = '© OpenStreetMap contributors';
   static String courtClusterLabel(int count) =>
       '$count courts here. Zoom in to see them.';
   static const recenterOnMyLocation = 'Recenter on my location';

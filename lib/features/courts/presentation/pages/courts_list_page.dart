@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/presentation/widgets/app_message_view.dart';
+import '../../../../core/presentation/widgets/readable_width.dart';
 import '../../../../core/settings/settings_providers.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/router/routes.dart';
@@ -50,68 +51,70 @@ class CourtsListPage extends ConsumerWidget {
         tooltip: AppStrings.addCourtTooltip,
         child: const Icon(Icons.add),
       ),
-      body: courtsAsync.when(
-        loading: () => const CourtListSkeleton(),
-        error: (error, stackTrace) => CourtErrorView(
-          error: error,
-          onRetry: () => ref.invalidate(nearbyCourtsProvider),
-        ),
-        data: (courts) {
-          if (courts.isEmpty) {
-            final area = ref.watch(browsingAreaProvider);
-            final radius = AppStrings.settingsRadiusLabel(
-              ref.watch(searchRadiusProvider),
-            );
+      body: ReadableWidth(
+        child: courtsAsync.when(
+          loading: () => const CourtListSkeleton(),
+          error: (error, stackTrace) => CourtErrorView(
+            error: error,
+            onRetry: () => ref.invalidate(nearbyCourtsProvider),
+          ),
+          data: (courts) {
+            if (courts.isEmpty) {
+              final area = ref.watch(browsingAreaProvider);
+              final radius = AppStrings.settingsRadiusLabel(
+                ref.watch(searchRadiusProvider),
+              );
 
-            // An empty search is the app's best moment to ask for a
-            // contribution: the user is looking at a place they know, and
-            // they have just been told nobody has mapped it. Refreshing is
-            // the weaker answer, so it moves below.
-            return AppEmptyView(
-              icon: Icons.sports_basketball_outlined,
-              title: AppStrings.noCourtsNearbyTitle,
-              message: switch (area) {
-                null => AppStrings.noCourtsNearbyListMessage(radius),
-                BrowsingArea(cityName: final name?) =>
-                  AppStrings.noCourtsAroundListMessage(name, radius),
-                _ => AppStrings.noCourtsInAreaListMessage(radius),
-              },
-              actionLabel: AppStrings.addFirstCourt,
-              actionIcon: Icons.add_location_alt_outlined,
-              onAction: () => openAddCourtFlow(context, ref),
-              secondaryActionLabel: AppStrings.refresh,
-              onSecondaryAction: () => ref.invalidate(nearbyCourtsProvider),
-            );
-          }
-          return RefreshIndicator(
-            onRefresh: () async => ref.invalidate(nearbyCourtsProvider),
-            child: ListView.separated(
-              // Extra bottom padding so the last card clears the floating
-              // action button instead of sitting under it.
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg,
-                AppSpacing.lg,
-                AppSpacing.lg,
-                AppSpacing.xxxl * 2,
+              // An empty search is the app's best moment to ask for a
+              // contribution: the user is looking at a place they know, and
+              // they have just been told nobody has mapped it. Refreshing is
+              // the weaker answer, so it moves below.
+              return AppEmptyView(
+                icon: Icons.sports_basketball_outlined,
+                title: AppStrings.noCourtsNearbyTitle,
+                message: switch (area) {
+                  null => AppStrings.noCourtsNearbyListMessage(radius),
+                  BrowsingArea(cityName: final name?) =>
+                    AppStrings.noCourtsAroundListMessage(name, radius),
+                  _ => AppStrings.noCourtsInAreaListMessage(radius),
+                },
+                actionLabel: AppStrings.addFirstCourt,
+                actionIcon: Icons.add_location_alt_outlined,
+                onAction: () => openAddCourtFlow(context, ref),
+                secondaryActionLabel: AppStrings.refresh,
+                onSecondaryAction: () => ref.invalidate(nearbyCourtsProvider),
+              );
+            }
+            return RefreshIndicator(
+              onRefresh: () async => ref.invalidate(nearbyCourtsProvider),
+              child: ListView.separated(
+                // Extra bottom padding so the last card clears the floating
+                // action button instead of sitting under it.
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.lg,
+                  AppSpacing.lg,
+                  AppSpacing.xxxl * 2,
+                ),
+                itemCount: courts.length,
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: AppSpacing.md),
+                itemBuilder: (context, index) {
+                  final courtWithDistance = courts[index];
+                  return CourtCard(
+                    courtWithDistance: courtWithDistance,
+                    onTap: () => context.pushNamed(
+                      Routes.courtDetailName,
+                      pathParameters: {
+                        Routes.courtIdParam: courtWithDistance.court.id,
+                      },
+                    ),
+                  );
+                },
               ),
-              itemCount: courts.length,
-              separatorBuilder: (context, index) =>
-                  const SizedBox(height: AppSpacing.md),
-              itemBuilder: (context, index) {
-                final courtWithDistance = courts[index];
-                return CourtCard(
-                  courtWithDistance: courtWithDistance,
-                  onTap: () => context.pushNamed(
-                    Routes.courtDetailName,
-                    pathParameters: {
-                      Routes.courtIdParam: courtWithDistance.court.id,
-                    },
-                  ),
-                );
-              },
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
