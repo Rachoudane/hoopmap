@@ -133,12 +133,15 @@ class _ReportCourtDialogState extends ConsumerState<ReportCourtDialog> {
         ElevatedButton(
           onPressed: isSubmitting ? null : _submit,
           child: isSubmitting
-              ? const SizedBox(
+              ? SizedBox(
                   height: 18,
                   width: 18,
+                  // The label colour of the button it sits in: white is only
+                  // right while the button is dark, which it is not in the
+                  // dark theme.
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.onPrimary,
                   ),
                 )
               : const Text(AppStrings.reportSubmit),

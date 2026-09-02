@@ -371,12 +371,15 @@ class _AddCourtPageState extends ConsumerState<AddCourtPage> {
                       ? null
                       : _submit,
                   child: isSubmitting
-                      ? const SizedBox(
+                      ? SizedBox(
                           height: 20,
                           width: 20,
+                          // The label colour of the button it sits in: white
+                          // is only right while the button is dark, which it
+                          // is not in the dark theme.
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: Colors.white,
+                            color: colorScheme.onPrimary,
                           ),
                         )
                       : const Text(AppStrings.submitAddCourt),

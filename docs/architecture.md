@@ -21,6 +21,14 @@ The router (`core/router/app_router.dart`) has two notable features:
 
 Since a court detail page can also be opened directly by a cold deep link (with no existing navigation stack), `core/router/back_to_home_scope.dart` intercepts back navigation (button or system gesture) via `PopScope`: if there's something to pop, it pops normally; otherwise, it navigates explicitly to home.
 
+## Dark mode, kept honest
+
+The palette lives in `core/theme/app_colors.dart` and every widget reads its colours from `Theme.of(context).colorScheme`. Three tests keep that true rather than aspirational:
+
+- `test/core/theme/contrast_test.dart` computes WCAG ratios **from the palette itself** (not from a copy) for both schemes: text pairs at 4.5:1, outlines that carry a shape at 3:1, against every surface they can land on — including the raised one a card or dialog paints, which is lighter than the scaffold and so the tightest of the three. `tool/check_contrast.py` still prints the whole table for design work, but it is the test that enforces.
+- `test/core/theme/dark_mode_test.dart` builds every screen in the dark theme and asserts it paints the dark scaffold — a screen that hard-codes its own background only reveals itself when the theme flips.
+- The same file scans `lib/` for raw colour literals and fails on any outside a short allowlist (markers and scrims drawn over map tiles, which look the same in both themes). A colour written into a widget is a colour that cannot follow the theme, so a new one has to be justified in that list.
+
 ## Settings
 
 `core/settings/` holds the two decisions the app makes for the user and can get wrong: the theme it guessed (`themeModeProvider`, read by `HoopmapApp`) and the radius it picked (`searchRadiusProvider`, read by `NearbyCourtsNotifier` and named in the empty state's message). Both are persisted in `shared_preferences` and both defend themselves against a stored value they can't honour — an unknown theme name falls back to "follow the system", a radius that isn't one of `searchRadiusChoices` falls back to 5 km, because an area no control can explain is worse than the one it can. The theme is stored by enum *name*, not index, so reordering `ThemeMode` upstream can't silently turn someone's "dark" into "light".

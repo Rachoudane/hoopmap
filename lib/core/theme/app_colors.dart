@@ -25,9 +25,12 @@ abstract final class AppColors {
   // Used for borders that must stand on their own as a shape cue (text
   // field, outlined button, pill), not just as a divider: darkened/
   // lightened from asphaltOutline/chalkOutline to clear the WCAG 3:1
-  // non-text contrast threshold against the scaffold background — see
-  // tool/check_contrast.py.
-  static const Color asphaltOutlineStrong = Color(0xFF5C6572);
+  // non-text contrast threshold against every surface they can land on —
+  // including the raised one a card or a dialog paints, which is lighter
+  // than the scaffold and therefore the tightest of the three. Enforced by
+  // test/core/theme/contrast_test.dart, which computes the ratios from
+  // these values rather than from a copy.
+  static const Color asphaltOutlineStrong = Color(0xFF737D8C);
 
   static const Color chalk = Color(0xFFF6F3EE);
   static const Color chalkSurface = Color(0xFFFFFFFF);

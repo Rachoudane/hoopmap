@@ -4,8 +4,10 @@ under the AA thresholds (4.5:1 for normal text, 3:1 for large/bold text
 or non-text UI like icons/outlines).
 
 This is a standalone audit tool with the palette's hex values copied in
-(kept in sync by hand — there are few enough pairs that duplicating them
-here is simpler than parsing Dart). Run after any palette change:
+(kept in sync by hand). It prints the whole table, which is useful while
+designing; the pairs the app must not regress on are enforced by
+test/core/theme/contrast_test.dart, which reads the real palette. Run
+after any palette change:
     python tool/check_contrast.py
 """
 
@@ -39,7 +41,7 @@ ASPHALT = "#14171B"
 ASPHALT_SURFACE = "#1D2126"
 ASPHALT_SURFACE_ELEVATED = "#262B31"
 ASPHALT_OUTLINE = "#3A4048"
-ASPHALT_OUTLINE_STRONG = "#5C6572"
+ASPHALT_OUTLINE_STRONG = "#737D8C"
 CHALK = "#F6F3EE"
 CHALK_SURFACE = "#FFFFFF"
 CHALK_SURFACE_ELEVATED = "#FBF9F5"
