@@ -19,7 +19,14 @@ class FakeLocationService extends LocationService {
   final Object? _errorToThrow;
 
   @override
-  Future<bool> isServiceEnabled() async => true;
+  Future<bool> isServiceEnabled() async {
+    // The service check comes first in currentPosition(), so a fake that only
+    // throws from readPosition() could never reproduce a disabled-GPS
+    // failure. Throwing here keeps the failure the test asked for intact.
+    final error = _errorToThrow;
+    if (error != null) throw error;
+    return true;
+  }
 
   @override
   Future<LocationPermissionStatus> checkPermission() async =>
@@ -128,6 +135,65 @@ void main() {
       final result = await future;
 
       expect(result, isEmpty);
+    });
+
+    test('every location failure surfaces as its own error state, so each '
+        'screen can offer the right way out', () async {
+      for (final failure in const [
+        LocationPermissionDeniedException(),
+        LocationPermissionPermanentlyDeniedException(),
+        LocationServiceDisabledException(),
+        LocationFixTimeoutException(),
+      ]) {
+        // Broadcast, for the same reason as the test below: the location
+        // failure short-circuits before anything listens to the stream.
+        final controller = StreamController<List<Court>>.broadcast();
+        final container = ProviderContainer(
+          overrides: [
+            locationServiceProvider.overrideWithValue(
+              FakeLocationService.throwing(failure),
+            ),
+            courtRepositoryProvider.overrideWithValue(
+              FakeCourtRepository(controller),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+        addTearDown(controller.close);
+        container.listen(nearbyCourtsProvider, (previous, next) {});
+
+        await expectLater(
+          container.read(nearbyCourtsProvider.future),
+          throwsA(same(failure)),
+          reason: 'the search must not repackage $failure',
+        );
+      }
+    });
+
+    test('a location failure never reaches the repository', () async {
+      final controller = StreamController<List<Court>>.broadcast();
+      final repository = FakeCourtRepository(controller);
+      final container = ProviderContainer(
+        overrides: [
+          locationServiceProvider.overrideWithValue(
+            FakeLocationService.throwing(
+              const LocationServiceDisabledException(),
+            ),
+          ),
+          courtRepositoryProvider.overrideWithValue(repository),
+        ],
+      );
+      addTearDown(container.dispose);
+      addTearDown(controller.close);
+      container.listen(nearbyCourtsProvider, (previous, next) {});
+
+      await expectLater(
+        container.read(nearbyCourtsProvider.future),
+        throwsA(isA<LocationServiceDisabledException>()),
+      );
+      // No position, no box to search: querying Overpass anyway would spend a
+      // request on a place picked at random.
+      expect(controller.hasListener, isFalse);
     });
 
     test('a denied location permission surfaces as an error state', () async {
