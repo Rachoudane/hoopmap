@@ -71,6 +71,7 @@ abstract final class AppStrings {
   static const pickCityTitle = 'Choose a city';
   static const pickCitySearchLabel = 'Search a city or country';
   static const pickCityUseMyLocation = 'Use my location';
+  static const pickCityNoMatchTitle = 'No city with that name';
   static const pickCityNoMatch =
       "No city matches that. Try a country name, or pan the map to look "
       'anywhere.';

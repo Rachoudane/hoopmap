@@ -13,6 +13,8 @@ import '../../domain/court.dart';
 import '../../domain/court_repository.dart';
 import '../court_detail_provider.dart';
 import '../court_error_messages.dart';
+import '../widgets/court_detail_skeleton.dart';
+import '../widgets/court_error_view.dart';
 import '../widgets/court_photo.dart';
 import '../widgets/court_pill.dart';
 
@@ -29,7 +31,7 @@ class CourtDetailPage extends ConsumerWidget {
       child: Scaffold(
         appBar: AppBar(title: const Text(AppStrings.courtDetailTitle)),
         body: courtAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const CourtDetailSkeleton(),
           error: (error, stackTrace) {
             if (error is CourtNotFoundException) {
               return AppEmptyView(
@@ -40,9 +42,10 @@ class CourtDetailPage extends ConsumerWidget {
                 onAction: () => context.go(Routes.home),
               );
             }
-            return AppErrorView(
-              message: courtErrorMessage(error),
-              icon: courtErrorIcon(error),
+            // The same error view as the list and the map: one place
+            // decides what an error looks like and what it offers.
+            return CourtErrorView(
+              error: error,
               onRetry: () => ref.invalidate(courtDetailProvider(courtId)),
             );
           },

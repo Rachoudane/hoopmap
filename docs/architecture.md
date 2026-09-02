@@ -21,6 +21,16 @@ The router (`core/router/app_router.dart`) has two notable features:
 
 Since a court detail page can also be opened directly by a cold deep link (with no existing navigation stack), `core/router/back_to_home_scope.dart` intercepts back navigation (button or system gesture) via `PopScope`: if there's something to pop, it pops normally; otherwise, it navigates explicitly to home.
 
+## Loading, empty and error, everywhere
+
+Every asynchronous screen answers all three states, and answers them the same way:
+
+- **Waiting** is the shape of what is coming — `CourtListSkeleton` for the list, `CourtDetailSkeleton` for a court — never a spinner alone in the middle of a screen. A spinner says "wait" and nothing else; it mattered most on the detail page, which a cold deep link can make the first thing a new user ever sees. A small indicator inside the control that is busy (the submit button) is the one place a spinner is still right, because there the wait belongs to that control.
+- **Empty** is `AppEmptyView`, and where the app can suggest something it does: no courts leads with adding the first one, no matching city says so in the same shape as every other empty result.
+- **Failure** is `CourtErrorView` on all three court screens, so one place decides what an error looks like and what it offers — a message per cause, Retry, and the system settings when only they can help.
+
+`test/core/presentation/states_test.dart` asserts each of those per screen, and scans `lib/` for a bare centred `CircularProgressIndicator` so the cheap answer cannot come back.
+
 ## Fitting every screen
 
 `test/core/responsive_test.dart` builds every screen at four shapes — a 320x568 phone, a phone in landscape, a tablet either way up — plus a small phone at 1.5x text, and fails on any overflow. Flutter reports overflow as an exception in tests, so "nothing overflowed" is something a test can assert, unlike "it looked fine on my phone".

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/location/location_opt_in_flow.dart';
+import '../../../../core/presentation/widgets/app_message_view.dart';
 import '../../../../core/presentation/widgets/readable_width.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../domain/city.dart';
@@ -85,15 +86,13 @@ class _PickCityPageState extends ConsumerState<PickCityPage> {
               const Divider(height: 1),
               Expanded(
                 child: cities.isEmpty
-                    ? Padding(
-                        padding: const EdgeInsets.all(AppSpacing.xl),
-                        child: Text(
-                          AppStrings.pickCityNoMatch,
-                          textAlign: TextAlign.center,
-                          style: textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
+                    // The same empty state as everywhere else, rather than a
+                    // paragraph on its own: a search that found nothing
+                    // looks the same wherever it happens.
+                    ? const AppEmptyView(
+                        icon: Icons.search_off,
+                        title: AppStrings.pickCityNoMatchTitle,
+                        message: AppStrings.pickCityNoMatch,
                       )
                     : ListView.builder(
                         itemCount: cities.length,
