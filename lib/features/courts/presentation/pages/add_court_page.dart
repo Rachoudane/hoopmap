@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../../core/l10n/app_strings.dart';
+import '../../../../core/location/location_opt_in.dart';
+import '../../../../core/location/location_opt_in_flow.dart';
 import '../../../../core/location/location_providers.dart';
 import '../../../../core/router/back_to_home_scope.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -44,6 +46,23 @@ class _AddCourtPageState extends ConsumerState<AddCourtPage> {
   }
 
   Future<void> _useCurrentPosition({bool isInitial = false}) async {
+    // Opening this form is not a request for the user's location: on first
+    // launch it would put the system dialog on a screen that never asked for
+    // it. Without an opt-in, the picker just starts on the fallback centre.
+    if (isInitial) {
+      if (!ref.read(locationOptInProvider)) {
+        setState(() {
+          _setSelectedPosition(_fallbackMapCenter);
+          _initialMapCenter ??= _fallbackMapCenter;
+        });
+        return;
+      }
+    } else if (!await requestLocationOptIn(context, ref)) {
+      // Declined the explanation: leave the marker where the user put it.
+      return;
+    }
+    if (!mounted) return;
+
     setState(() => _locatingCurrentPosition = true);
     LatLng resolved;
     try {

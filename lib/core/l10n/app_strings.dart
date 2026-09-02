@@ -48,6 +48,25 @@ abstract final class AppStrings {
       "Hoopmap isn't using your location yet.";
   static const useMyLocation = 'See courts near me';
 
+  // Pre-permission rationale (core/location/pages/)
+  static const locationRationaleTitle = 'Find the courts around you';
+  static const locationRationaleIntro =
+      'Hoopmap can use your location to show the courts closest to you '
+      'first.';
+  static const locationRationaleReasonDistance =
+      'Courts are sorted by how far away they are, so the nearest one is at '
+      'the top.';
+  static const locationRationaleReasonWhileOpen =
+      'Your location is read only while you have Hoopmap open, never in the '
+      'background.';
+  static const locationRationaleReasonPrivate =
+      'It stays on your phone: Hoopmap never stores it or sends it anywhere.';
+  static const locationRationaleNextStep =
+      'Android will ask you to confirm on the next screen. You can change '
+      'your mind at any time in the app settings.';
+  static const locationRationaleAllow = 'Allow location';
+  static const locationRationaleNotNow = 'Not now';
+
   // Court errors (core/court_error_messages.dart)
   static const errorLocationPermissionDenied =
       'Location access was denied. Allow it to see courts near you.';

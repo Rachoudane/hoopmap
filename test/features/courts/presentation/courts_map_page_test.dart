@@ -3,7 +3,11 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoopmap/core/l10n/app_strings.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hoopmap/core/location/location_opt_in.dart';
+import 'package:hoopmap/core/location/pages/location_rationale_page.dart';
+import 'package:hoopmap/core/onboarding/onboarding_providers.dart';
+import 'package:hoopmap/core/router/routes.dart';
 import 'package:hoopmap/core/location/location_providers.dart';
 import 'package:hoopmap/core/location/location_service.dart';
 import 'package:hoopmap/features/courts/data/court_repository_provider.dart';
@@ -16,6 +20,7 @@ import 'package:hoopmap/features/courts/presentation/pages/courts_map_page.dart'
 import 'package:hoopmap/features/courts/presentation/widgets/court_cluster_marker.dart';
 import 'package:hoopmap/features/courts/presentation/widgets/court_marker.dart';
 import 'package:hoopmap/features/courts/presentation/widgets/user_location_marker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 Court _court(String id, String name) => _courtAt(id, name, 0, 0);
 
@@ -733,5 +738,54 @@ void main() {
     expect(find.text(AppStrings.locationNotRequestedShort), findsOneWidget);
     expect(find.text(AppStrings.useMyLocation), findsOneWidget);
     expect(find.text(AppStrings.retry), findsNothing);
+  });
+
+  testWidgets('the recenter button explains itself before the system asks', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+    final service = _RecordingLocationService();
+    final container = ProviderContainer(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(preferences),
+        locationServiceProvider.overrideWithValue(service),
+        nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
+          yield const <CourtWithDistance>[];
+        }),
+      ],
+    );
+    addTearDown(container.dispose);
+    final router = GoRouter(
+      initialLocation: Routes.home,
+      routes: [
+        GoRoute(
+          path: Routes.home,
+          builder: (context, state) => const CourtsMapPage(),
+        ),
+        GoRoute(
+          path: Routes.locationRationale,
+          name: Routes.locationRationaleName,
+          builder: (context, state) => const LocationRationalePage(),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byTooltip(AppStrings.recenterOnMyLocation));
+    await tester.pumpAndSettle();
+
+    // A floating action button is not a place to meet the system permission
+    // dialog for the first time.
+    expect(find.text(AppStrings.locationRationaleTitle), findsOneWidget);
+    expect(container.read(locationOptInProvider), isFalse);
   });
 }

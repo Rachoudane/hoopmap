@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/app_strings.dart';
-import '../../../../core/location/location_opt_in.dart';
+import '../../../../core/location/location_opt_in_flow.dart';
 import '../../../../core/location/location_providers.dart';
 import '../../../../core/location/location_service.dart';
 import '../../../../core/presentation/widgets/app_message_view.dart';
@@ -33,7 +33,7 @@ class CourtErrorView extends ConsumerWidget {
         message: AppStrings.locationNotRequestedMessage,
         actionLabel: AppStrings.useMyLocation,
         actionIcon: Icons.my_location,
-        onAction: () => ref.read(locationOptInProvider.notifier).optIn(),
+        onAction: () => requestLocationOptIn(context, ref),
       );
     }
 

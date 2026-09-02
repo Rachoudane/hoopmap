@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoopmap/app.dart';
 import 'package:hoopmap/core/l10n/app_strings.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hoopmap/core/location/location_opt_in.dart';
+import 'package:hoopmap/core/location/pages/location_rationale_page.dart';
+import 'package:hoopmap/core/router/routes.dart';
 import 'package:hoopmap/core/location/location_providers.dart';
 import 'package:hoopmap/core/location/location_service.dart';
 import 'package:hoopmap/core/onboarding/onboarding_providers.dart';
@@ -92,6 +95,8 @@ Future<_RecordingLocationService> _pumpFailedWith(
 }
 
 class _FakeLocationService extends LocationService {
+  int readPositionCallCount = 0;
+
   @override
   Future<bool> isServiceEnabled() async => true;
 
@@ -104,8 +109,10 @@ class _FakeLocationService extends LocationService {
       LocationPermissionStatus.granted;
 
   @override
-  Future<UserPosition> readPosition() async =>
-      const UserPosition(latitude: 48.8566, longitude: 2.3522);
+  Future<UserPosition> readPosition() async {
+    readPositionCallCount++;
+    return const UserPosition(latitude: 48.8566, longitude: 2.3522);
+  }
 
   @override
   Future<UserPosition?> lastKnownPosition() async => null;
@@ -303,7 +310,7 @@ void main() {
   });
 
   testWidgets('offers the user their own courts before anything has been '
-      'asked of them, and asks only when they press it', (tester) async {
+      'asked of them, and explains before the system does', (tester) async {
     SharedPreferences.setMockInitialValues({'onboarding_completed': true});
     final sharedPreferences = await SharedPreferences.getInstance();
     final container = ProviderContainer(
@@ -314,11 +321,26 @@ void main() {
       ],
     );
     addTearDown(container.dispose);
+    final router = GoRouter(
+      initialLocation: Routes.home,
+      routes: [
+        GoRoute(
+          path: Routes.home,
+          builder: (context, state) => const CourtsListPage(),
+        ),
+        GoRoute(
+          path: Routes.locationRationale,
+          name: Routes.locationRationaleName,
+          builder: (context, state) => const LocationRationalePage(),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
 
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: const MaterialApp(home: CourtsListPage()),
+        child: MaterialApp.router(routerConfig: router),
       ),
     );
     await tester.pump();
@@ -332,11 +354,68 @@ void main() {
     await tester.tap(find.text(AppStrings.useMyLocation));
     await tester.pumpAndSettle();
 
+    // The explanation comes first, and nothing has been asked of the system
+    // while it is on screen.
+    expect(find.text(AppStrings.locationRationaleTitle), findsOneWidget);
+    expect(container.read(locationOptInProvider), false);
+
+    await tester.tap(find.text(AppStrings.locationRationaleAllow));
+    await tester.pumpAndSettle();
+
     // The offer is gone: the app went and looked, and this user simply has
     // no courts nearby.
     expect(container.read(locationOptInProvider), true);
     expect(find.text(AppStrings.locationNotRequestedTitle), findsNothing);
     expect(find.text(AppStrings.noCourtsNearbyTitle), findsOneWidget);
+  });
+
+  testWidgets('"Not now" on the explanation leaves the offer standing and the '
+      'system unasked', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarding_completed': true});
+    final sharedPreferences = await SharedPreferences.getInstance();
+    final locationService = _FakeLocationService();
+    final container = ProviderContainer(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+        locationServiceProvider.overrideWithValue(locationService),
+        courtRepositoryProvider.overrideWithValue(_EmptyCourtRepository()),
+      ],
+    );
+    addTearDown(container.dispose);
+    final router = GoRouter(
+      initialLocation: Routes.home,
+      routes: [
+        GoRoute(
+          path: Routes.home,
+          builder: (context, state) => const CourtsListPage(),
+        ),
+        GoRoute(
+          path: Routes.locationRationale,
+          name: Routes.locationRationaleName,
+          builder: (context, state) => const LocationRationalePage(),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text(AppStrings.useMyLocation));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(AppStrings.locationRationaleNotNow));
+    await tester.pumpAndSettle();
+
+    // Declining a text button costs the user nothing: no system dialog was
+    // spent, so the offer can be made again.
+    expect(container.read(locationOptInProvider), false);
+    expect(locationService.readPositionCallCount, 0);
+    expect(find.text(AppStrings.locationNotRequestedTitle), findsOneWidget);
   });
 
   testWidgets('a timed-out fix offers Retry alone', (tester) async {

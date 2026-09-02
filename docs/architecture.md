@@ -27,7 +27,13 @@ The system permission dialog is the most consequential thing the app ever asks f
 
 So nothing touches the device's location until the user asks. `locationOptInProvider` (`core/location/location_opt_in.dart`, persisted in `shared_preferences`) records that request, and `userPositionProvider` throws `LocationNotRequestedException` until it is true. One gate, in front of the whole sequence — not even a silent permission check runs before it — so whichever feature ends up needing a position first cannot bring the dialog forward with it.
 
-Three things can flip it, all of them a button the user pressed: the last onboarding slide's "See courts near me", the same offer on a list with no position (`CourtErrorView` renders that state as an `AppEmptyView` — an offer, not a failure), and the map's status banner. The last onboarding slide also offers "Browse without location", which enters the app having asked for nothing: declining a text button is a decision either side can undo later, unlike declining the system dialog.
+Inside the app, every request goes through `requestLocationOptIn` (`core/location/location_opt_in_flow.dart`), which pushes `LocationRationalePage` first: what the position is used for, that it is read only while the app is open, that it never leaves the phone, and that Android is about to ask. Android's own dialog can say none of that, and it can only be answered well once — so the explanation comes on a screen the user can leave ("Not now") without spending that answer. Allowing pops `true`, the flow opts in, and the system dialog follows as the consequence of a button. A user who already opted in is not explained to again.
+
+Every entry point funnels through that one function — the offer on a list with no position (`CourtErrorView` renders that state as an `AppEmptyView`: an offer, not a failure), the map's status banner, the map's recenter button, and the add-court form's "My current location" — so no button can reach the system dialog without the screen that explains it. Opening the add-court form doesn't ask either: without an opt-in its picker just starts on the fallback centre.
+
+Onboarding is the exception, and deliberately: its last slide *is* the explanation, immediately followed by "See courts near me", so pushing the rationale screen on top of it would say the same thing twice. That slide also offers "Browse without location", and Skip grants nothing — declining a text button is a decision either side can undo later, unlike declining the system dialog.
+
+One wrinkle worth knowing: the opt-in is written after `WidgetsBinding.instance.endOfFrame` rather than immediately on the pop. The screen underneath is being rebuilt as the explanation pops, and it resumes the very providers the write invalidates; writing mid-frame lands a state change inside a build.
 
 ## Error handling
 

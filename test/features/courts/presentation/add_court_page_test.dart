@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hoopmap/core/auth/auth_providers.dart';
 import 'package:hoopmap/core/location/location_providers.dart';
 import 'package:hoopmap/core/location/location_service.dart';
+import 'package:hoopmap/core/location/location_opt_in.dart';
 import 'package:hoopmap/core/router/routes.dart';
 import 'package:hoopmap/features/courts/data/court_repository_provider.dart';
 import 'package:hoopmap/features/courts/domain/court.dart';
@@ -17,6 +18,8 @@ import 'package:hoopmap/features/courts/presentation/widgets/location_picker_map
 import 'package:latlong2/latlong.dart';
 
 class _FakeLocationService extends LocationService {
+  int readPositionCallCount = 0;
+
   @override
   Future<bool> isServiceEnabled() async => true;
 
@@ -29,8 +32,10 @@ class _FakeLocationService extends LocationService {
       LocationPermissionStatus.granted;
 
   @override
-  Future<UserPosition> readPosition() async =>
-      const UserPosition(latitude: 48.8566, longitude: 2.3522);
+  Future<UserPosition> readPosition() async {
+    readPositionCallCount++;
+    return const UserPosition(latitude: 48.8566, longitude: 2.3522);
+  }
 
   @override
   Future<UserPosition?> lastKnownPosition() async => null;
@@ -106,6 +111,7 @@ class _FakeCourtRepository implements CourtRepository {
 Future<_FakeCourtRepository> _pumpAddCourtPage(
   WidgetTester tester, {
   LocationService? locationService,
+  bool optedIntoLocation = true,
 }) async {
   // The map picker pushes the rest of the form (position summary, "Saisir
   // coordinates", the submit button) below the default test surface's
@@ -135,6 +141,12 @@ Future<_FakeCourtRepository> _pumpAddCourtPage(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        // A user who has already asked for their location: the form
+        // prefilling from GPS is what these tests are about, and the opt-in
+        // that unlocks it has its own tests.
+        locationOptInProvider.overrideWithBuild(
+          (ref, notifier) => optedIntoLocation,
+        ),
         courtRepositoryProvider.overrideWithValue(repository),
         anonymousSessionProvider.overrideWith((ref) async => 'test-uid'),
         locationServiceProvider.overrideWithValue(
@@ -304,4 +316,19 @@ void main() {
       expect(buttonAfter.onPressed, isNotNull);
     },
   );
+
+  testWidgets('opening the form asks the device for nothing when the user '
+      'never opted in', (tester) async {
+    final locationService = _FakeLocationService();
+    await _pumpAddCourtPage(
+      tester,
+      locationService: locationService,
+      optedIntoLocation: false,
+    );
+
+    // Reaching a form is not a request for a location, and the picker has a
+    // perfectly good fallback centre to start from.
+    expect(locationService.readPositionCallCount, 0);
+    expect(find.byType(LocationPickerMap), findsOneWidget);
+  });
 }

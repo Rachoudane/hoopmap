@@ -7,7 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../../core/l10n/app_strings.dart';
-import '../../../../core/location/location_opt_in.dart';
+import '../../../../core/location/location_opt_in_flow.dart';
 import '../../../../core/location/location_providers.dart';
 import '../../../../core/location/location_service.dart';
 import '../../../../core/router/routes.dart';
@@ -121,6 +121,12 @@ class _CourtsMapPageState extends ConsumerState<CourtsMapPage> {
   }
 
   Future<void> _recenterOnUser() async {
+    // Recentring on a position the app was never allowed to take is a
+    // request for that permission, and it goes through the same explanation
+    // as every other one rather than firing the system dialog off a FAB.
+    if (!await requestLocationOptIn(context, ref)) return;
+    if (!mounted) return;
+
     setState(() => _recentering = true);
     try {
       final position = await ref
@@ -335,7 +341,7 @@ class _MapStatusBanner extends ConsumerWidget {
         icon: Icons.my_location,
         message: AppStrings.locationNotRequestedShort,
         actionLabel: AppStrings.useMyLocation,
-        onAction: () => ref.read(locationOptInProvider.notifier).optIn(),
+        onAction: () => requestLocationOptIn(context, ref),
       ),
       AsyncError(:final error) => _BannerCard(
         icon: courtErrorIcon(error),
