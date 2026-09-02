@@ -15,7 +15,7 @@ import '../../domain/geo_bounds.dart';
 import '../court_error_messages.dart';
 import '../map_courts_provider.dart';
 import '../nearby_courts_notifier.dart';
-import '../widgets/court_marker.dart';
+import '../widgets/court_markers_layer.dart';
 import '../widgets/court_preview_card.dart';
 import '../widgets/user_location_marker.dart';
 
@@ -236,24 +236,12 @@ class _CourtsMapPageState extends ConsumerState<CourtsMapPage> {
                     ),
                   ],
                 ),
-              MarkerLayer(
-                markers: [
-                  for (final courtWithDistance in courts)
-                    Marker(
-                      point: LatLng(
-                        courtWithDistance.court.latitude,
-                        courtWithDistance.court.longitude,
-                      ),
-                      width: 48,
-                      height: 48,
-                      child: CourtMarker(
-                        selected:
-                            _selected?.court.id == courtWithDistance.court.id,
-                        onTap: () =>
-                            setState(() => _selected = courtWithDistance),
-                      ),
-                    ),
-                ],
+              CourtMarkersLayer(
+                courts: courts,
+                mapController: _mapController,
+                selectedCourtId: _selected?.court.id,
+                onCourtSelected: (courtWithDistance) =>
+                    setState(() => _selected = courtWithDistance),
               ),
               const Align(
                 alignment: Alignment.bottomLeft,

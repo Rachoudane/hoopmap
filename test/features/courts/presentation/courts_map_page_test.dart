@@ -12,6 +12,7 @@ import 'package:hoopmap/features/courts/domain/court_with_distance.dart';
 import 'package:hoopmap/features/courts/domain/geo_bounds.dart';
 import 'package:hoopmap/features/courts/presentation/nearby_courts_notifier.dart';
 import 'package:hoopmap/features/courts/presentation/pages/courts_map_page.dart';
+import 'package:hoopmap/features/courts/presentation/widgets/court_cluster_marker.dart';
 import 'package:hoopmap/features/courts/presentation/widgets/court_marker.dart';
 import 'package:hoopmap/features/courts/presentation/widgets/user_location_marker.dart';
 
@@ -114,17 +115,19 @@ void main() {
   testWidgets('displays a FlutterMap with one marker per court', (
     tester,
   ) async {
+    // Far enough apart to be drawn separately at the map's opening zoom,
+    // close enough to all be on screen.
     final courts = [
       CourtWithDistance(
-        court: _court('court-a', 'Court A'),
+        court: _courtAt('court-a', 'Court A', 0, 0),
         distanceInMeters: 450,
       ),
       CourtWithDistance(
-        court: _court('court-b', 'Court B'),
+        court: _courtAt('court-b', 'Court B', 0.02, 0),
         distanceInMeters: 1200,
       ),
       CourtWithDistance(
-        court: _court('court-c', 'Court C'),
+        court: _courtAt('court-c', 'Court C', 0.04, 0),
         distanceInMeters: 2400,
       ),
     ];
@@ -142,9 +145,80 @@ void main() {
     await tester.pump();
 
     expect(find.byType(FlutterMap), findsOneWidget);
+    expect(find.byType(CourtMarker), findsNWidgets(3));
+    expect(find.byType(CourtClusterMarker), findsNothing);
+  });
 
-    final markerLayer = tester.widget<MarkerLayer>(find.byType(MarkerLayer));
-    expect(markerLayer.markers, hasLength(3));
+  testWidgets('courts too close to draw apart share one counted cluster', (
+    tester,
+  ) async {
+    // Metres apart: three separate pins here would be an unreadable pile.
+    final courts = [
+      for (var i = 0; i < 3; i++)
+        CourtWithDistance(
+          court: _courtAt('court-$i', 'Court $i', 0.0001 * i, 0),
+          distanceInMeters: 100.0 * i,
+        ),
+    ];
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
+            yield courts;
+          }),
+        ],
+        child: const MaterialApp(home: CourtsMapPage()),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(CourtMarker), findsNothing);
+    expect(find.text('3'), findsOneWidget);
+  });
+
+  testWidgets('tapping a cluster zooms in on it, which breaks it apart', (
+    tester,
+  ) async {
+    // Close enough to cluster at zoom 13, far enough to separate a few
+    // zoom levels in.
+    final courts = [
+      CourtWithDistance(
+        court: _courtAt('court-a', 'Court A', 0, 0),
+        distanceInMeters: 100,
+      ),
+      CourtWithDistance(
+        court: _courtAt('court-b', 'Court B', 0.008, 0),
+        distanceInMeters: 900,
+      ),
+    ];
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          nearbyCourtsProvider.overrideWithBuild((ref, notifier) async* {
+            yield courts;
+          }),
+        ],
+        child: const MaterialApp(home: CourtsMapPage()),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(CourtClusterMarker), findsOneWidget);
+    final zoomBefore = MapCamera.of(
+      tester.element(find.byType(TileLayer)),
+    ).zoom;
+
+    await tester.tap(find.byType(CourtClusterMarker));
+    await tester.pumpAndSettle();
+
+    expect(
+      MapCamera.of(tester.element(find.byType(TileLayer))).zoom,
+      greaterThan(zoomBefore),
+    );
+    expect(find.byType(CourtClusterMarker), findsNothing);
+    expect(find.byType(CourtMarker), findsNWidgets(2));
   });
 
   testWidgets('tapping a marker opens a preview card for that court', (

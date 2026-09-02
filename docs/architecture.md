@@ -51,6 +51,12 @@ Three details make that behave:
 
 Distances are measured from the user's position when it's known and from the middle of the viewport otherwise (a court on the map still has to say how far it is from something). The position is read, not watched, so a fix landing mid-search doesn't re-run the query just to relabel distances.
 
+### Clustering
+
+Courts closer together than a marker is wide would pile into an unreadable heap, so `domain/court_cluster.dart` groups them: the world is cut into square cells of a fixed size *in screen pixels* (Web Mercator, the tiles' own projection), and each cell's courts become one marker at the middle of the ones it holds. Two consequences make this cheap: zooming in splits clusters on its own (the same courts simply fall into different cells, no state kept between zoom levels), and the grid is anchored to the world rather than to the viewport, so panning can't reshuffle which courts are grouped.
+
+`CourtMarkersLayer` lives inside `FlutterMap`'s children so it rebuilds with the camera it reads (`MapCamera.of`), which is what keeps the grouping in step with the zoom without the page tracking gestures itself. Past zoom 17 the grouping is dropped entirely — at street level, two courts on the same block are exactly the detail the user came to see. Tapping a cluster zooms in on it rather than opening one of the courts it happens to hold.
+
 ## The repository pattern and the composite repository
 
 `CourtRepository` is the only abstraction the `presentation` layer sees: `watchCourtsInBounds(GeoBounds)`, `watchCourt(String id)`, and `addCourt(Court court)`. Three classes implement it:

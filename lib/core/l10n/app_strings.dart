@@ -80,6 +80,8 @@ abstract final class AppStrings {
   static const noCourtsNearbyMapMessage =
       'No courts were found within 5 km of you.';
   static const openStreetMapContributors = 'OpenStreetMap contributors';
+  static String courtClusterLabel(int count) =>
+      '$count courts here. Zoom in to see them.';
   static const recenterOnMyLocation = 'Recenter on my location';
   static const mapLocatingYou = 'Finding courts near you…';
 
