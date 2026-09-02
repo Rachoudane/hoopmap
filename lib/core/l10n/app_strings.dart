@@ -54,8 +54,11 @@ abstract final class AppStrings {
       'The OpenStreetMap service is under heavy load right now. Try again '
       'in a moment.';
   static const errorAreaTooLarge = 'The area to search is too large to query.';
+  static const errorOffline =
+      "You appear to be offline. Check your connection and try again.";
   static const errorOverpass =
-      "Couldn't reach OpenStreetMap. Check your connection and try again.";
+      "OpenStreetMap's court service isn't responding right now. Try again "
+      'in a moment.';
   static const errorCourtNotFound =
       "This court can't be found. It may have been removed.";
   static const errorUnexpected = 'Something went wrong. Try again.';

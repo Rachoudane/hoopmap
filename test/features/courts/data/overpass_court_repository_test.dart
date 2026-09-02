@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -147,19 +148,74 @@ void main() {
       );
     });
 
-    test('throws OverpassException when the underlying request fails (no '
-        'network)', () async {
+    test('reports the device as offline when no instance can be reached at '
+        'all', () async {
       final client = _FakeHttpClient(
         (request) async => throw const SocketException('Failed host lookup'),
       );
       final repository = OverpassCourtRepository(
         httpClient: client,
+        endpoints: _instances,
+        wait: _RecordingClock().wait,
+      );
+
+      // Three independent instances do not go dark at once nearly as often
+      // as a phone loses its connection.
+      await expectLater(
+        repository.watchCourtsInBounds(bounds),
+        emitsError(isA<NetworkUnavailableException>()),
+      );
+      expect(client.requestCount, _instances.length);
+    });
+
+    test(
+      'blames Overpass, not the connection, when an instance did answer',
+      () async {
+        final client = _FakeHttpClient(
+          (request) async => request.url == _instances[0]
+              ? throw const SocketException('Failed host lookup')
+              : _response('down', statusCode: 503),
+        );
+        final repository = OverpassCourtRepository(
+          httpClient: client,
+          endpoints: _instances,
+          wait: _RecordingClock().wait,
+        );
+
+        // Something answered, so the connection works: telling the user to
+        // check it would send them after the wrong problem.
+        await expectLater(
+          repository.watchCourtsInBounds(bounds),
+          emitsError(
+            allOf(
+              isA<OverpassException>(),
+              isNot(isA<NetworkUnavailableException>()),
+            ),
+          ),
+        );
+      },
+    );
+
+    test('a slow instance is a slow service, not a lost connection', () async {
+      // Reached every server; none of them finished answering.
+      final client = _FakeHttpClient(
+        (request) => Completer<http.StreamedResponse>().future,
+      );
+      final repository = OverpassCourtRepository(
+        httpClient: client,
+        endpoints: _instances,
+        requestTimeout: const Duration(milliseconds: 10),
         wait: _RecordingClock().wait,
       );
 
       await expectLater(
         repository.watchCourtsInBounds(bounds),
-        emitsError(isA<OverpassException>()),
+        emitsError(
+          allOf(
+            isA<OverpassException>(),
+            isNot(isA<NetworkUnavailableException>()),
+          ),
+        ),
       );
     });
 

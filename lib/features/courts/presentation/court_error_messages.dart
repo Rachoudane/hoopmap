@@ -21,6 +21,9 @@ String courtErrorMessage(Object error) {
   if (error is LocationFixTimeoutException) {
     return AppStrings.errorLocationTimeout;
   }
+  if (error is NetworkUnavailableException) {
+    return AppStrings.errorOffline;
+  }
   if (error is OverpassRateLimitedException) {
     return AppStrings.errorOverpassRateLimited;
   }
@@ -51,6 +54,15 @@ IconData courtErrorIcon(Object error) {
   }
   if (error is CourtNotFoundException) {
     return Icons.search_off;
+  }
+  // The service and the connection get different icons for the same reason
+  // they get different messages: one is something to wait out, the other is
+  // something to go and fix.
+  if (error is NetworkUnavailableException) {
+    return Icons.wifi_off_rounded;
+  }
+  if (error is OverpassException || error is OverpassRateLimitedException) {
+    return Icons.cloud_off_rounded;
   }
   return Icons.wifi_off_rounded;
 }

@@ -21,6 +21,11 @@ final List<Uri> defaultOverpassEndpoints = List.unmodifiable([
   Uri.parse('https://overpass.private.coffee/api/interpreter'),
 ]);
 
+/// How long a single instance is given to answer. Overpass' own usage policy
+/// caps queries at 30 s, so waiting longer than that only holds the user on a
+/// request the server has already given up on.
+const Duration _defaultRequestTimeout = Duration(seconds: 30);
+
 /// Delay before the first retry. Each further attempt waits twice as long, so
 /// an instance that is merely busy isn't hammered on its way back up.
 const Duration _defaultFirstRetryDelay = Duration(milliseconds: 400);
@@ -53,6 +58,30 @@ class OverpassRateLimitedException implements Exception {
   String toString() => 'OverpassRateLimitedException';
 }
 
+/// The device could not reach any Overpass instance at all — no response,
+/// not even an error, from any of them.
+///
+/// Distinct from [OverpassException] because it is almost certainly not
+/// about Overpass: three independent instances do not go dark at once nearly
+/// as often as a phone loses its connection, and the two call for different
+/// things from the user. Telling someone to check their connection while
+/// they are online is as unhelpful as telling them to wait for a service
+/// that is fine.
+class NetworkUnavailableException implements Exception {
+  const NetworkUnavailableException();
+
+  @override
+  String toString() => 'NetworkUnavailableException';
+}
+
+/// A request that never reached the server: no connection, DNS failure,
+/// connection reset. Kept private because what the app acts on is whether
+/// *every* instance was unreachable, which is what turns it into a
+/// [NetworkUnavailableException].
+class _UnreachableOverpassException extends OverpassException {
+  _UnreachableOverpassException(super.message);
+}
+
 class AreaTooLargeException implements Exception {
   AreaTooLargeException(this.areaInSquareDegrees);
 
@@ -69,10 +98,12 @@ class OverpassCourtRepository implements CourtRepository {
     required http.Client httpClient,
     List<Uri>? endpoints,
     Duration firstRetryDelay = _defaultFirstRetryDelay,
+    Duration requestTimeout = _defaultRequestTimeout,
     Future<void> Function(Duration duration)? wait,
   }) : _httpClient = httpClient,
        _endpoints = endpoints ?? defaultOverpassEndpoints,
        _firstRetryDelay = firstRetryDelay,
+       _requestTimeout = requestTimeout,
        _wait = wait ?? _sleep,
        assert(
          endpoints == null || endpoints.isNotEmpty,
@@ -82,6 +113,7 @@ class OverpassCourtRepository implements CourtRepository {
   final http.Client _httpClient;
   final List<Uri> _endpoints;
   final Duration _firstRetryDelay;
+  final Duration _requestTimeout;
   final Future<void> Function(Duration duration) _wait;
 
   /// The instance that answered last, tried first next time.
@@ -90,9 +122,8 @@ class OverpassCourtRepository implements CourtRepository {
   /// known to be down and pay its timeout again.
   int _preferredEndpoint = 0;
 
-  static Future<void> _sleep(Duration duration) => Future<void>.delayed(
-    duration,
-  );
+  static Future<void> _sleep(Duration duration) =>
+      Future<void>.delayed(duration);
 
   @override
   Stream<List<Court>> watchCourtsInBounds(GeoBounds bounds) async* {
@@ -139,6 +170,9 @@ class OverpassCourtRepository implements CourtRepository {
   /// sees, so a run that ends rate-limited still reads as rate-limited.
   Future<List<Court>> _fetchElements(String query) async {
     Object lastFailure = OverpassException('No Overpass instance was tried.');
+    // Every instance out of reach says more about the device's connection
+    // than about Overpass.
+    var everyAttemptWasUnreachable = true;
 
     for (var attempt = 0; attempt < _endpoints.length; attempt++) {
       final index = (_preferredEndpoint + attempt) % _endpoints.length;
@@ -148,6 +182,9 @@ class OverpassCourtRepository implements CourtRepository {
         return courts;
       } catch (failure) {
         if (!_isWorthRetryingElsewhere(failure)) rethrow;
+        if (failure is! _UnreachableOverpassException) {
+          everyAttemptWasUnreachable = false;
+        }
         lastFailure = failure;
       }
 
@@ -157,6 +194,7 @@ class OverpassCourtRepository implements CourtRepository {
       }
     }
 
+    if (everyAttemptWasUnreachable) throw const NetworkUnavailableException();
     throw lastFailure;
   }
 
@@ -169,15 +207,16 @@ class OverpassCourtRepository implements CourtRepository {
             headers: const {'User-Agent': 'Hoopmap/1.0'},
             body: {'data': query},
           )
-          .timeout(const Duration(seconds: 30));
+          .timeout(_requestTimeout);
     } on TimeoutException {
+      // An instance that answers slowly is still an instance that answers:
+      // a device with no connection fails long before this.
       throw OverpassException('Overpass did not respond in time.');
     } catch (e) {
       // Covers connectivity failures (SocketException, no network, DNS
       // failure, ...): whatever the underlying platform exception is, it is
-      // normalized to OverpassException so callers never see a raw
-      // platform-specific type.
-      throw OverpassException('Could not reach Overpass: $e');
+      // normalized so callers never see a raw platform-specific type.
+      throw _UnreachableOverpassException('Could not reach Overpass: $e');
     }
 
     if (response.statusCode == 429) {
@@ -206,9 +245,9 @@ class OverpassCourtRepository implements CourtRepository {
 
 /// Whether another instance is worth asking after [failure].
 ///
-/// A rate limit is about this instance's load, and a timeout, a connectivity
-/// failure or an unreadable body say nothing about the query itself — all
-/// worth asking elsewhere. A status the server chose to reject the request
+/// A rate limit is about this instance's load, and a timeout, an unreachable
+/// host or an unreadable body say nothing about the query itself — all worth
+/// asking elsewhere. A status the server chose to reject the request
 /// with (4xx other than 429) is about the query, and every instance runs the
 /// same one.
 bool _isWorthRetryingElsewhere(Object failure) {

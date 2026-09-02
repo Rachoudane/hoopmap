@@ -62,6 +62,23 @@ void main() {
       );
     });
 
+    test('tells being offline apart from the service being down', () {
+      expect(
+        courtErrorMessage(const NetworkUnavailableException()),
+        contains('offline'),
+      );
+      // Nothing for the user to fix on their end, so nothing that sends them
+      // to look at their connection.
+      expect(
+        courtErrorMessage(OverpassException('boom')),
+        isNot(contains('offline')),
+      );
+      expect(
+        courtErrorMessage(OverpassException('boom')),
+        isNot(contains('connection')),
+      );
+    });
+
     test('gives a specific message for a missing court', () {
       expect(
         courtErrorMessage(CourtNotFoundException('court-1')),
@@ -107,8 +124,22 @@ void main() {
       );
     });
 
+    test('separates a lost connection from a service that is down', () {
+      expect(
+        courtErrorIcon(const NetworkUnavailableException()),
+        Icons.wifi_off_rounded,
+      );
+      expect(
+        courtErrorIcon(OverpassException('boom')),
+        Icons.cloud_off_rounded,
+      );
+      expect(
+        courtErrorIcon(OverpassRateLimitedException()),
+        Icons.cloud_off_rounded,
+      );
+    });
+
     test('falls back to a network icon for everything else', () {
-      expect(courtErrorIcon(OverpassException('boom')), Icons.wifi_off_rounded);
       expect(
         courtErrorIcon(Exception('anything else')),
         Icons.wifi_off_rounded,
