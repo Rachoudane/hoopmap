@@ -1,5 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../analytics/analytics_event.dart';
+import '../analytics/analytics_providers.dart';
+import '../analytics/app_events.dart';
 import 'geolocator_location_service.dart';
 import 'location_opt_in.dart';
 import 'location_service.dart';
@@ -23,9 +28,37 @@ final Provider<LocationService> locationServiceProvider =
 /// would re-prompt the user and drain the battery. Recovery is an explicit
 /// refresh.
 final FutureProvider<UserPosition> userPositionProvider =
-    FutureProvider<UserPosition>((ref) {
+    FutureProvider<UserPosition>((ref) async {
       if (!ref.watch(locationOptInProvider)) {
         throw const LocationNotRequestedException();
       }
-      return ref.watch(locationServiceProvider).currentPosition();
+
+      // The one place the system's answer becomes known, so the one place
+      // that can count it. An opt-in that never turns into a position is the
+      // app's worst outcome, and only this tells the three ways it happens
+      // apart.
+      final analytics = ref.watch(analyticsProvider);
+      final service = ref.watch(locationServiceProvider);
+      try {
+        final position = await service.currentPosition();
+        unawaited(
+          analytics.log(AppEvents.locationOutcome(LocationOutcome.granted)),
+        );
+        return position;
+      } catch (error) {
+        unawaited(
+          analytics.log(AppEvents.locationOutcome(locationOutcomeOf(error))),
+        );
+        rethrow;
+      }
     }, retry: (retryCount, error) => null);
+
+/// Which of the ways to have no position [error] is.
+LocationOutcome locationOutcomeOf(Object error) => switch (error) {
+  LocationPermissionPermanentlyDeniedException() =>
+    LocationOutcome.deniedForever,
+  LocationPermissionDeniedException() => LocationOutcome.denied,
+  LocationServiceDisabledException() => LocationOutcome.serviceOff,
+  LocationFixTimeoutException() => LocationOutcome.fixTimedOut,
+  _ => LocationOutcome.notRequested,
+};

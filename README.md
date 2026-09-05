@@ -35,7 +35,7 @@ The composite repository merges both lists, deduplicating by identifier, and kee
 - Flutter / Dart
 - Riverpod (`flutter_riverpod`) for state management and dependency injection
 - GoRouter (`go_router`) for navigation, deep links, and tab navigation (`StatefulShellRoute.indexedStack`)
-- Firebase: `firebase_core`, `cloud_firestore` (courts added by users), `firebase_auth` (anonymous authentication), `firebase_crashlytics` (crash reporting)
+- Firebase: `firebase_core`, `cloud_firestore` (courts added by users), `firebase_auth` (anonymous authentication), `firebase_crashlytics` (crash reporting), `firebase_analytics` (a fixed set of fifteen events)
 - `http` to query the Overpass API
 - `geolocator` for the user's location
 - `flutter_map` + `latlong2` for map rendering (OpenStreetMap tiles)
@@ -89,6 +89,14 @@ Release builds report crashes to Firebase Crashlytics. What is sent is the error
 Two things are deliberate about what gets reported. Collection is off in debug builds, so the dashboard only holds crashes from builds people actually have. And the failures the app already answers with a screen — a refused location permission, an Overpass instance that is down, a phone with no connection — are filtered out rather than filed: they are states the app is designed to reach, and reporting them would bury the real bugs. Only errors that reach the generic "something went wrong" message are reported. See [docs/architecture.md](docs/architecture.md#crash-reporting).
 
 There is no in-app switch to turn reporting off yet.
+
+## What the app measures
+
+Release builds send fifteen analytics events to Firebase — and only fifteen, enforced by a test. They cover one loop: leaving onboarding, asking for a location and what the system answered, searching and what it found, opening a court, and getting directions to it; plus the contribution branch (starting, submitting or failing to submit a court), picking a city, recentring the map, and reporting a court.
+
+What is sent is the event, a handful of qualifying values (which entry point, how many results, which failure), and the device and app information Firebase collects by default. No coordinates, no court positions, nothing typed into a form. Collection is off in debug builds. The full list and where each event is logged is in [docs/architecture.md](docs/architecture.md#what-the-app-measures).
+
+There is no in-app switch to turn analytics off yet.
 
 ## Firestore security
 

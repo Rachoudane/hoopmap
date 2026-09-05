@@ -3,10 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 // outside the package's default export.
 import 'package:flutter_riverpod/misc.dart';
 
+import '../../../core/analytics/analytics_event.dart';
+import '../../../core/analytics/analytics_providers.dart';
 import '../../../core/location/location_providers.dart';
 import '../data/court_repository_provider.dart';
 import '../domain/court_with_distance.dart';
 import '../domain/geo_bounds.dart';
+import 'court_search_analytics.dart';
 
 /// The box the map is currently showing, or null while the user hasn't moved
 /// it themselves.
@@ -56,11 +59,24 @@ courtsInBoundsProvider =
         final position = ref.read(userPositionProvider).value;
         final originLat = position?.latitude ?? bounds.centerLat;
         final originLng = position?.longitude ?? bounds.centerLng;
+        // Reported per family instance, so panning back onto a box already
+        // searched is answered from the cache and counted once, which is
+        // what it is: one search.
+        final report = CourtSearchReport(
+          ref.watch(analyticsProvider),
+          CourtSearchArea.mapBounds,
+        );
 
-        await for (final courts in courtRepository.watchCourtsInBounds(
-          bounds,
-        )) {
-          yield courtsByDistanceFrom(courts, originLat, originLng);
+        try {
+          await for (final courts in courtRepository.watchCourtsInBounds(
+            bounds,
+          )) {
+            report.found(courts.length);
+            yield courtsByDistanceFrom(courts, originLat, originLng);
+          }
+        } catch (error) {
+          report.failed(error);
+          rethrow;
         }
       },
       isAutoDispose: true,

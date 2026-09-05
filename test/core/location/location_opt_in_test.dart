@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hoopmap/core/analytics/analytics_event.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoopmap/core/location/location_opt_in.dart';
 import 'package:hoopmap/core/location/location_providers.dart';
@@ -95,7 +96,9 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      await container.read(locationOptInProvider.notifier).optIn();
+      await container
+          .read(locationOptInProvider.notifier)
+          .optIn(LocationEntryPoint.onboarding);
 
       expect(container.read(locationOptInProvider), isTrue);
       // "I already asked for this" has to survive a restart, or the app
@@ -129,7 +132,9 @@ void main() {
         throwsA(isA<LocationNotRequestedException>()),
       );
 
-      await container.read(locationOptInProvider.notifier).optIn();
+      await container
+          .read(locationOptInProvider.notifier)
+          .optIn(LocationEntryPoint.inApp);
 
       expect(
         await container.read(userPositionProvider.future),

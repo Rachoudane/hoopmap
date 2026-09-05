@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/analytics/analytics_event.dart';
 import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/presentation/widgets/app_message_view.dart';
 import '../../../../core/presentation/widgets/readable_width.dart';
@@ -47,7 +48,8 @@ class CourtsListPage extends ConsumerWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => openAddCourtFlow(context, ref),
+        onPressed: () =>
+            openAddCourtFlow(context, ref, AddCourtEntryPoint.listFab),
         tooltip: AppStrings.addCourtTooltip,
         child: const Icon(Icons.add),
       ),
@@ -80,7 +82,11 @@ class CourtsListPage extends ConsumerWidget {
                 },
                 actionLabel: AppStrings.addFirstCourt,
                 actionIcon: Icons.add_location_alt_outlined,
-                onAction: () => openAddCourtFlow(context, ref),
+                onAction: () => openAddCourtFlow(
+                  context,
+                  ref,
+                  AddCourtEntryPoint.listEmpty,
+                ),
                 secondaryActionLabel: AppStrings.refresh,
                 onSecondaryAction: () => ref.invalidate(nearbyCourtsProvider),
               );

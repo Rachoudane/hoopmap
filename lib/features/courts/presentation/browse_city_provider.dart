@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/analytics/analytics_providers.dart';
+import '../../../core/analytics/app_events.dart';
 import '../../../core/onboarding/onboarding_providers.dart'
     show sharedPreferencesProvider;
 import '../domain/city.dart';
@@ -37,6 +41,9 @@ class BrowseCityNotifier extends Notifier<City?> {
     await ref
         .read(sharedPreferencesProvider)
         .setString(_browseCityKey, city.id);
+    // Which cities get picked is also a list of the ones missing from
+    // [browsableCities], read the other way round.
+    unawaited(ref.read(analyticsProvider).log(AppEvents.cityPicked(city.id)));
     state = city;
   }
 

@@ -6,6 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../../../core/analytics/analytics_event.dart';
+import '../../../../core/analytics/analytics_providers.dart';
+import '../../../../core/analytics/app_events.dart';
 import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/location/location_opt_in_flow.dart';
 import '../../../../core/location/location_providers.dart';
@@ -157,6 +160,9 @@ class _CourtsMapPageState extends ConsumerState<CourtsMapPage> {
         LatLng(position.latitude, position.longitude),
         _recenterZoom,
       );
+      // Only on success: a recenter that ended in a snack bar is the
+      // opposite of the thing being counted.
+      unawaited(ref.read(analyticsProvider).log(AppEvents.mapRecentered()));
     } catch (error) {
       if (!mounted) return;
       final recovery = courtErrorRecovery(error);
@@ -382,7 +388,8 @@ class _MapStatusBanner extends ConsumerWidget {
         icon: Icons.sports_basketball_outlined,
         message: AppStrings.noCourtsNearbyMapMessage,
         actionLabel: AppStrings.addACourt,
-        onAction: () => openAddCourtFlow(context, ref),
+        onAction: () =>
+            openAddCourtFlow(context, ref, AddCourtEntryPoint.mapEmpty),
       ),
       _ => const SizedBox.shrink(),
     };

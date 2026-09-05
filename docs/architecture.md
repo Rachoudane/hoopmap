@@ -96,6 +96,28 @@ Collection is off in debug builds: a crash from a laptop running `flutter run` l
 On Android, the `com.google.firebase.crashlytics` Gradle plugin uploads the ProGuard mapping file on each release build; without it, `isMinifyEnabled` would leave every native stack trace in the dashboard obfuscated. Dart code is not obfuscated by `tool/build_release.ps1`, so Dart traces arrive readable with no symbol upload step.
 
 
+## What the app measures
+
+`core/analytics/` holds fifteen events and no more. The number is a budget, not a coincidence: a set that grows one event per feature stops answering anything, because every question then takes a query nobody writes and the funnel that matters is buried under taps. `AppEvents.catalogue` names all fifteen, and `test/core/analytics/app_events_test.dart` fails if there are sixteen — so a new event has to displace an old one, deliberately, rather than accumulate.
+
+They cover one loop and its branch. Arriving: `onboarding_completed` (with which of the three exits, since only "See courts near me" hands over a location). Being located: `location_rationale_shown`, then `location_opt_in` or `location_declined`, then `location_outcome` — what the system actually answered, with `denied_forever`, `service_off` and `fix_timed_out` kept apart because a setting to fix and a fix that never came call for different work. Searching: `courts_searched` (where, and how many it found — an area with no courts is the commonest way this app disappoints) and `courts_search_failed`. Then `court_opened`, `directions_opened` — the end of the loop, someone leaving to go and play. Off to the side: `city_picked`, `map_recentered`, `court_reported`, and the contribution branch that hangs off an empty result, `add_court_started` / `add_court_submitted` / `add_court_failed`.
+
+Where each is logged is chosen so it cannot be bypassed or double-counted:
+
+- `locationOptInProvider.optIn` takes a required `LocationEntryPoint`, because it is the one place onboarding and the in-app rationale both pass through, and an opt-in whose origin is unknown is the number nobody can act on. `openAddCourtFlow` takes a required `AddCourtEntryPoint` for the same reason it holds the Terms gate: a second door into the form must pass through both.
+- `courts_searched` is reported by `CourtSearchReport`, one per search, on the *first* answer only. `CompositeCourtRepository` emits once per source, so counting emissions would double every number in the dashboard. The position fix sits inside the reported span: to the user, a search that never ran because the app couldn't locate them is a search that failed.
+- `court_opened` is logged from the detail page's `initState`, not from the taps that lead there — a cold deep link arrives with no tap anywhere in the app, and a count that quietly omits those measures a different app.
+- `add_court_submitted` is logged after the write, from the resulting state, so a submission counts as accepted only once Firestore has taken it; `invalid_input` and `write_failed` stay apart because one is a label to fix and the other an outage.
+
+`courts_search_failed` is the deliberate mirror image of crash reporting: these are exactly the failures `isExpectedCourtError` filters *out* of Crashlytics. An offline phone is not a bug, but how often the app fails to answer, and why, is a product number worth having.
+
+Nothing is awaited. `AnalyticsService.log` returns a future that call sites drop on purpose — no screen, navigation or write may wait on a measurement of itself.
+
+`analyticsProvider` defaults to `NoOpAnalyticsService` and `main` overrides it with the Firebase one. That way round because a screen that logs an event must stay buildable in a test with no Firebase app, and there are far more screens than composition roots. Collection is off in debug, like crash reporting: a funnel measured on a developer's laptop is a funnel nobody walked.
+
+`test/core/analytics/app_events_test.dart` also checks what Firebase will actually accept — snake_case names within 40 characters, none of them reserved, parameter values that are strings or numbers (never a bool, which is why a court is submitted as `outdoor`/`indoor`), strings within 100 characters. Firebase drops silently what it cannot store, so the alternative to a test is an empty chart discovered weeks later.
+
+
 ## Court photos and Wikimedia Commons attribution
 
 `Court.imageUrl` (optional) is never populated from an arbitrary OSM `image=*` URL: `data/commons_urls.dart` only resolves references that point to Wikimedia Commons (a `wikimedia_commons` tag in `File:...` format, or an `image`/Firestore URL already hosted on Commons), and returns `null` otherwise. This is a legal constraint, not just a technical one — Commons is the only source `data/commons_attribution.dart` can query the Commons API (`imageinfo`/`extmetadata`) against to obtain an author. The `CourtPhoto` widget (`presentation/widgets/`) only shows the photo once that attribution resolves with a non-empty author; on failure, when there's no author, or while resolution is pending, it shows the brand's fallback visual instead — never the photo without attribution, never an empty area.
@@ -165,6 +187,7 @@ No test in the project makes a real network call or a real Firebase call:
 - **`CompositeCourtRepository`**, **`NearbyCourtsNotifier`**, **`courtDetailProvider`**, and **`AddCourtController`** are tested with hand-written fake `CourtRepository` implementations (and, for geolocation, a fake `LocationService`), written in each test file.
 - **`FirestoreCourtRepository`** is tested with `FakeFirebaseFirestore`, from the `fake_cloud_firestore` package: an in-memory implementation of `cloud_firestore`, not a real instance.
 - **`FirebaseAuth`** is never invoked for real in tests: `anonymousSessionProvider` is overridden at the `ProviderContainer` level, and `FirestoreCourtRepository` accepts an optional `currentUserId` parameter to inject the user identifier without going through `FirebaseAuth.instance`.
+- **`AnalyticsService`** is a hand-written recording fake (`RecordingAnalyticsService`): `test/core/analytics/analytics_wiring_test.dart` drives each flow and asserts the events it produced — including the ones it must *not* produce, such as an outcome for a system that was never asked.
 - **`CrashReporter`** is a hand-written recording fake: `test/core/crash/crash_reporting_test.dart` drives the two Flutter error hooks and a deliberately failing provider, and asserts both what gets reported and what stays unreported.
 - **`SharedPreferences`** uses `SharedPreferences.setMockInitialValues(...)` (an in-memory implementation provided by the package) before `sharedPreferencesProvider.overrideWithValue(...)`, never the device's real storage.
 
@@ -174,4 +197,4 @@ No test in the project makes a real network call or a real Firebase call:
 - **No disk cache**: every search re-triggers an Overpass request and a Firestore request; no response is persisted locally between sessions.
 - **Search radius is a fixed set of choices**: the list queries one of five radii (1–20 km, default 5 km) around the user or the city they picked; it is not adjusted for court density, and values between the offered ones aren't reachable. The map escapes the radius entirely by searching its own viewport, but only from the first pan onwards.
 - **No moderation**: `AddCourtController` writes directly to Firestore as soon as the form is valid. Nothing filters, flags, or verifies a submission before it's visible to every user.
-- **Crash reporting cannot be turned off from inside the app**: collection is on for every release build and there is no setting for it yet. It sends the error, its stack trace and the device/build Crashlytics collects by default — never a position, and never anything the user typed.
+- **Crash reporting and analytics cannot be turned off from inside the app**: both collect on every release build and there is no setting for either yet. Crash reporting sends the error, its stack trace and the device/build Crashlytics collects by default; analytics sends the fifteen events and their parameters. Neither sends a position, a court's coordinates, or anything the user typed.

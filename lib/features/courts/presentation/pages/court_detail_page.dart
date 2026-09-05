@@ -1,8 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../../core/analytics/analytics_event.dart';
+import '../../../../core/analytics/analytics_providers.dart';
+import '../../../../core/analytics/app_events.dart';
 import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/presentation/widgets/app_message_view.dart';
 import '../../../../core/router/back_to_home_scope.dart';
@@ -18,13 +23,32 @@ import '../widgets/court_error_view.dart';
 import '../widgets/court_photo.dart';
 import '../widgets/court_pill.dart';
 
-class CourtDetailPage extends ConsumerWidget {
+class CourtDetailPage extends ConsumerStatefulWidget {
   const CourtDetailPage({super.key, required this.courtId});
 
   final String courtId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CourtDetailPage> createState() => _CourtDetailPageState();
+}
+
+class _CourtDetailPageState extends ConsumerState<CourtDetailPage> {
+  @override
+  void initState() {
+    super.initState();
+    // Here rather than at the taps that lead here: a cold deep link opens
+    // this page with no tap of its own, and a court-opened count that
+    // silently omits them measures the wrong app.
+    unawaited(
+      ref
+          .read(analyticsProvider)
+          .log(AppEvents.courtOpened(courtOriginOf(widget.courtId))),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final courtId = widget.courtId;
     final courtAsync = ref.watch(courtDetailProvider(courtId));
 
     return BackToHomeScope(
@@ -56,13 +80,19 @@ class CourtDetailPage extends ConsumerWidget {
   }
 }
 
-class _CourtDetailBody extends StatelessWidget {
+/// Whether [courtId] names a court imported from OpenStreetMap or one added
+/// here, which is the one thing about a court known before it has loaded.
+CourtOrigin courtOriginOf(String courtId) => courtId.startsWith('osm:')
+    ? CourtOrigin.openStreetMap
+    : CourtOrigin.hoopmap;
+
+class _CourtDetailBody extends ConsumerWidget {
   const _CourtDetailBody({required this.court});
 
   final Court court;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final isFromOpenStreetMap = court.id.startsWith('osm:');
@@ -179,7 +209,20 @@ class _CourtDetailBody extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: () => _openDirections(court),
+                      onPressed: () {
+                        // The end of the loop the app exists for: someone
+                        // is leaving to go and play.
+                        unawaited(
+                          ref
+                              .read(analyticsProvider)
+                              .log(
+                                AppEvents.directionsOpened(
+                                  courtOriginOf(court.id),
+                                ),
+                              ),
+                        );
+                        _openDirections(court);
+                      },
                       icon: const Icon(Icons.directions),
                       label: const Text(AppStrings.directions),
                     ),

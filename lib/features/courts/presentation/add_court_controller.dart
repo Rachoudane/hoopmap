@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/analytics/analytics_providers.dart';
+import '../../../core/analytics/app_events.dart';
 import '../../../core/auth/auth_providers.dart';
 import '../data/court_repository_provider.dart';
 import '../domain/court.dart';
@@ -38,8 +42,28 @@ class AddCourtController extends AsyncNotifier<void> {
       );
       await ref.read(courtRepositoryProvider).addCourt(court);
     });
+
+    // Reported after the fact rather than around the write, so a submission
+    // is counted as accepted only once Firestore has actually taken it.
+    // Paired with the failures, this is the completion rate of the only form
+    // in the app.
+    final analytics = ref.read(analyticsProvider);
+    unawaited(switch (state) {
+      AsyncError(:final error) => analytics.log(
+        AppEvents.addCourtFailed(_failureReason(error)),
+      ),
+      _ => analytics.log(
+        AppEvents.addCourtSubmitted(hoopCount: hoopCount, isOutdoor: isOutdoor),
+      ),
+    });
   }
 }
+
+/// A form the user filled in wrong and a write that failed are two different
+/// problems — one is a label to fix, the other an outage — and only this
+/// tells them apart in the dashboard.
+String _failureReason(Object error) =>
+    error is ArgumentError ? 'invalid_input' : 'write_failed';
 
 void _validate({
   required String name,

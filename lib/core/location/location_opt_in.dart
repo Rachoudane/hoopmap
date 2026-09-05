@@ -1,5 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../analytics/analytics_event.dart';
+import '../analytics/analytics_providers.dart';
+import '../analytics/app_events.dart';
 import '../onboarding/onboarding_providers.dart' show sharedPreferencesProvider;
 
 const String _locationOptInKey = 'location_opt_in';
@@ -26,8 +31,15 @@ class LocationOptInNotifier extends Notifier<bool> {
 
   /// Records that the user asked for their location, which is what lets the
   /// position fix — and with it the system prompt — run at all.
-  Future<void> optIn() async {
+  ///
+  /// [entryPoint] is required rather than defaulted because this is the one
+  /// place both paths into the prompt meet, and an opt-in whose origin is
+  /// unknown is the one number nobody can act on.
+  Future<void> optIn(LocationEntryPoint entryPoint) async {
     await ref.read(sharedPreferencesProvider).setBool(_locationOptInKey, true);
+    unawaited(
+      ref.read(analyticsProvider).log(AppEvents.locationOptIn(entryPoint)),
+    );
     state = true;
   }
 }

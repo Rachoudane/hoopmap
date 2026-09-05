@@ -1,7 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../analytics/analytics_event.dart';
+import '../analytics/analytics_providers.dart';
+import '../analytics/app_events.dart';
 import '../router/routes.dart';
 import 'location_opt_in.dart';
 
@@ -19,13 +24,21 @@ import 'location_opt_in.dart';
 Future<bool> requestLocationOptIn(BuildContext context, WidgetRef ref) async {
   if (ref.read(locationOptInProvider)) return true;
 
+  final analytics = ref.read(analyticsProvider);
+  unawaited(analytics.log(AppEvents.locationRationaleShown()));
+
   final allowed = await context.pushNamed<bool>(Routes.locationRationaleName);
-  if (allowed != true) return false;
+  if (allowed != true) {
+    unawaited(analytics.log(AppEvents.locationDeclined()));
+    return false;
+  }
 
   // The screen underneath is being rebuilt as the explanation pops, and it
   // resumes the very providers this write invalidates. Letting the frame
   // finish first keeps the state change out of the middle of a build.
   await WidgetsBinding.instance.endOfFrame;
-  await ref.read(locationOptInProvider.notifier).optIn();
+  await ref
+      .read(locationOptInProvider.notifier)
+      .optIn(LocationEntryPoint.inApp);
   return true;
 }

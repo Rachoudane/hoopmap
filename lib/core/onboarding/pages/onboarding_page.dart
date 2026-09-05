@@ -1,9 +1,13 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../analytics/analytics_event.dart';
+import '../../analytics/analytics_providers.dart';
+import '../../analytics/app_events.dart';
 import '../../l10n/app_strings.dart';
 import '../../location/location_opt_in.dart';
 import '../../router/routes.dart';
@@ -61,14 +65,20 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
 
   /// Leaves onboarding for the app.
   ///
-  /// [withLocation] is the whole point of the last slide: the system
-  /// permission dialog only ever appears because the user pressed a button
-  /// asking for their courts, never because they reached the end of a
-  /// carousel. Skipping, or browsing without location, opts into nothing.
-  Future<void> _finish({bool withLocation = false}) async {
-    if (withLocation) {
-      await ref.read(locationOptInProvider.notifier).optIn();
+  /// Only [OnboardingExit.getStarted] opts into a location, and that is the
+  /// whole point of the last slide: the system permission dialog only ever
+  /// appears because the user pressed a button asking for their courts,
+  /// never because they reached the end of a carousel. Skipping, or browsing
+  /// without location, opts into nothing.
+  Future<void> _finish(OnboardingExit exit) async {
+    if (exit == OnboardingExit.getStarted) {
+      await ref
+          .read(locationOptInProvider.notifier)
+          .optIn(LocationEntryPoint.onboarding);
     }
+    unawaited(
+      ref.read(analyticsProvider).log(AppEvents.onboardingCompleted(exit)),
+    );
     await ref.read(onboardingCompletedProvider.notifier).complete();
     if (!mounted) return;
     context.go(Routes.home);
@@ -76,7 +86,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
 
   void _next() {
     if (_isLastPage) {
-      _finish(withLocation: true);
+      _finish(OnboardingExit.getStarted);
       return;
     }
     _pageController.nextPage(
@@ -99,7 +109,9 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
                 child: TextButton(
-                  onPressed: _isLastPage ? null : _finish,
+                  onPressed: _isLastPage
+                      ? null
+                      : () => _finish(OnboardingExit.skipped),
                   child: Text(
                     AppStrings.onboardingSkip,
                     style: TextStyle(
@@ -226,7 +238,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                 height: _isLastPage ? null : 0,
                 child: _isLastPage
                     ? TextButton(
-                        onPressed: _finish,
+                        onPressed: () => _finish(OnboardingExit.browseInstead),
                         child: const Text(AppStrings.onboardingBrowseInstead),
                       )
                     : const SizedBox.shrink(),
