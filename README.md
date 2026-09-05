@@ -35,7 +35,7 @@ The composite repository merges both lists, deduplicating by identifier, and kee
 - Flutter / Dart
 - Riverpod (`flutter_riverpod`) for state management and dependency injection
 - GoRouter (`go_router`) for navigation, deep links, and tab navigation (`StatefulShellRoute.indexedStack`)
-- Firebase: `firebase_core`, `cloud_firestore` (courts added by users), `firebase_auth` (anonymous authentication)
+- Firebase: `firebase_core`, `cloud_firestore` (courts added by users), `firebase_auth` (anonymous authentication), `firebase_crashlytics` (crash reporting)
 - `http` to query the Overpass API
 - `geolocator` for the user's location
 - `flutter_map` + `latlong2` for map rendering (OpenStreetMap tiles)
@@ -81,6 +81,14 @@ A court's detail page is reachable via the `hoopmap://courts/<id>` link, where `
 ```bash
 adb shell am start -a android.intent.action.VIEW -d "hoopmap://courts/osm:way-123456"
 ```
+
+## Crash reporting
+
+Release builds report crashes to Firebase Crashlytics. What is sent is the error, its stack trace, and the device and build information Crashlytics collects by default — never a position, never anything typed into the add-court form, and nothing tied to an identity beyond the anonymous Firebase uid.
+
+Two things are deliberate about what gets reported. Collection is off in debug builds, so the dashboard only holds crashes from builds people actually have. And the failures the app already answers with a screen — a refused location permission, an Overpass instance that is down, a phone with no connection — are filtered out rather than filed: they are states the app is designed to reach, and reporting them would bury the real bugs. Only errors that reach the generic "something went wrong" message are reported. See [docs/architecture.md](docs/architecture.md#crash-reporting).
+
+There is no in-app switch to turn reporting off yet.
 
 ## Firestore security
 

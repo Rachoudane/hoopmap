@@ -5,6 +5,10 @@ plugins {
     id("com.android.application")
     // START: FlutterFire Configuration
     id("com.google.gms.google-services")
+    // Uploads the ProGuard mapping file on every release build. Without it,
+    // `isMinifyEnabled` below would leave every Android stack trace in the
+    // Crashlytics dashboard obfuscated.
+    id("com.google.firebase.crashlytics")
     // END: FlutterFire Configuration
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.

@@ -8,7 +8,25 @@ import '../domain/court_repository.dart';
 /// Translates the exceptions that can surface from the courts data layer
 /// into a message a user can act on, so no screen ever shows a raw
 /// exception type or message.
-String courtErrorMessage(Object error) {
+String courtErrorMessage(Object error) =>
+    _knownCourtErrorMessage(error) ?? AppStrings.errorUnexpected;
+
+/// Whether the app already has an answer for [error].
+///
+/// Answers the question crash reporting has to ask before filing anything: a
+/// refused permission or an Overpass instance that is down is a state this
+/// app is designed to end up in and draws a screen for, not a bug worth
+/// waking someone for. What falls through to [AppStrings.errorUnexpected] is,
+/// by definition, what nobody anticipated.
+///
+/// Derived from the same list [courtErrorMessage] reads rather than repeating
+/// it, so giving an exception a message tomorrow also stops it being filed as
+/// a bug.
+bool isExpectedCourtError(Object error) =>
+    _knownCourtErrorMessage(error) != null;
+
+/// The message written for [error], or null when there isn't one.
+String? _knownCourtErrorMessage(Object error) {
   if (error is LocationNotRequestedException) {
     return AppStrings.locationNotRequestedShort;
   }
@@ -39,7 +57,7 @@ String courtErrorMessage(Object error) {
   if (error is CourtNotFoundException) {
     return AppStrings.errorCourtNotFound;
   }
-  return AppStrings.errorUnexpected;
+  return null;
 }
 
 /// An icon matching [courtErrorMessage]'s cause, so a location-permission

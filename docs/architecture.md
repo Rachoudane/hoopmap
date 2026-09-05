@@ -79,6 +79,23 @@ Two of those failures cannot be fixed by retrying, because the setting that bloc
 
 `CourtsMapPage` is the exception, deliberately: it builds its `FlutterMap` unconditionally and overlays the loading, error and empty states as a compact card (`_MapStatusBanner`) instead. A page-filling placeholder would take the map away precisely when the user has lost the courts, so the map stays visible and pannable through all three states — a denied permission or a failed Overpass call costs the user the markers, never the map.
 
+## Crash reporting
+
+`core/crash/` sends what breaks to Crashlytics, and is careful about what it counts as breaking.
+
+`installCrashReporting` (called from `main` once Firebase is up) wires the two ways an error leaves a Flutter app: `FlutterError.onError` for anything thrown in a build, a layout, a paint or a framework callback, and `PlatformDispatcher.onError` for anything thrown by a future nobody was awaiting. Wiring only the first is the usual half-installation, and it is the half that misses the errors hardest to reproduce by hand. Both are recorded as fatal — neither kills the process, but both leave the user in front of something the app never meant to show. Whatever handler was already installed is kept and called first, and `PlatformDispatcher.onError` deliberately returns `false` so the engine still prints the error: the report is queued either way, and swallowing the stderr line costs every developer the one trace they read.
+
+Those two hooks alone would report almost nothing here. Every failure in the data layer is caught by Riverpod, turned into an `AsyncError` and drawn as a message, so it never becomes an uncaught error at all. `CrashReportingObserver` is a `ProviderObserver` that closes that gap by reporting `providerDidFail` — as non-fatal, because by construction the app survived and showed something.
+
+What keeps that from being noise is `isExpectedCourtError` (`court_error_messages.dart`): a refused permission or an Overpass instance that is down is a state the app is *designed* to reach and has a screen for, and filing it would open a bug against every user who took a train into a tunnel. Only what falls through to `AppStrings.errorUnexpected` is reported — which is the definition of an error nobody anticipated. That predicate reads the same list `courtErrorMessage` reads (both go through one private `_knownCourtErrorMessage`) rather than repeating it, so giving an exception a message tomorrow also stops it being filed as a bug.
+
+Collection is off in debug builds: a crash from a laptop running `flutter run` lands in the same dashboard as one from a phone in the wild and says nothing about the build people actually have.
+
+`CrashReporter` is an interface for the same reason `LocationService` and `CourtRepository` are — what the app reports, and what it declines to report, is exactly the part worth testing, and no test here may need a Firebase app. `FirebaseCrashReporter` is the one file that imports `firebase_crashlytics`, and is thin enough to have nothing left to test.
+
+On Android, the `com.google.firebase.crashlytics` Gradle plugin uploads the ProGuard mapping file on each release build; without it, `isMinifyEnabled` would leave every native stack trace in the dashboard obfuscated. Dart code is not obfuscated by `tool/build_release.ps1`, so Dart traces arrive readable with no symbol upload step.
+
+
 ## Court photos and Wikimedia Commons attribution
 
 `Court.imageUrl` (optional) is never populated from an arbitrary OSM `image=*` URL: `data/commons_urls.dart` only resolves references that point to Wikimedia Commons (a `wikimedia_commons` tag in `File:...` format, or an `image`/Firestore URL already hosted on Commons), and returns `null` otherwise. This is a legal constraint, not just a technical one — Commons is the only source `data/commons_attribution.dart` can query the Commons API (`imageinfo`/`extmetadata`) against to obtain an author. The `CourtPhoto` widget (`presentation/widgets/`) only shows the photo once that attribution resolves with a non-empty author; on failure, when there's no author, or while resolution is pending, it shows the brand's fallback visual instead — never the photo without attribution, never an empty area.
@@ -148,6 +165,7 @@ No test in the project makes a real network call or a real Firebase call:
 - **`CompositeCourtRepository`**, **`NearbyCourtsNotifier`**, **`courtDetailProvider`**, and **`AddCourtController`** are tested with hand-written fake `CourtRepository` implementations (and, for geolocation, a fake `LocationService`), written in each test file.
 - **`FirestoreCourtRepository`** is tested with `FakeFirebaseFirestore`, from the `fake_cloud_firestore` package: an in-memory implementation of `cloud_firestore`, not a real instance.
 - **`FirebaseAuth`** is never invoked for real in tests: `anonymousSessionProvider` is overridden at the `ProviderContainer` level, and `FirestoreCourtRepository` accepts an optional `currentUserId` parameter to inject the user identifier without going through `FirebaseAuth.instance`.
+- **`CrashReporter`** is a hand-written recording fake: `test/core/crash/crash_reporting_test.dart` drives the two Flutter error hooks and a deliberately failing provider, and asserts both what gets reported and what stays unreported.
 - **`SharedPreferences`** uses `SharedPreferences.setMockInitialValues(...)` (an in-memory implementation provided by the package) before `sharedPreferencesProvider.overrideWithValue(...)`, never the device's real storage.
 
 ## Known limitations
@@ -156,3 +174,4 @@ No test in the project makes a real network call or a real Firebase call:
 - **No disk cache**: every search re-triggers an Overpass request and a Firestore request; no response is persisted locally between sessions.
 - **Search radius is a fixed set of choices**: the list queries one of five radii (1–20 km, default 5 km) around the user or the city they picked; it is not adjusted for court density, and values between the offered ones aren't reachable. The map escapes the radius entirely by searching its own viewport, but only from the first pan onwards.
 - **No moderation**: `AddCourtController` writes directly to Firestore as soon as the form is valid. Nothing filters, flags, or verifies a submission before it's visible to every user.
+- **Crash reporting cannot be turned off from inside the app**: collection is on for every release build and there is no setting for it yet. It sends the error, its stack trace and the device/build Crashlytics collects by default — never a position, and never anything the user typed.
