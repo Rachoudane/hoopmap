@@ -6,17 +6,22 @@ import '../../../core/analytics/app_events.dart';
 import '../../../core/location/location_service.dart';
 import '../data/overpass_court_repository.dart';
 
-/// Reports the outcome of one court search, whichever of the two search
-/// paths ran it.
+/// Reports the outcome of one court search, whichever of the two search paths
+/// ran it.
 ///
-/// A search is a single question with a single answer, but it doesn't arrive
-/// as one: [CompositeCourtRepository] emits once per source, so the same
-/// search yields twice and counting every emission would double every number
-/// in the dashboard. [found] therefore reports the first answer and ignores
-/// the rest.
+/// One search, one event. `CompositeCourtRepository` holds its first value
+/// back until every source has answered, so that first value *is* the answer
+/// and can simply be counted. Anything after it is a live update to a search
+/// already reported — a court somebody added while the list was open — not
+/// the same search answering twice.
 ///
-/// Created per search rather than shared, since its whole state is "has this
-/// one already been counted".
+/// Getting this wrong is not hypothetical: counting every emission would
+/// double every number in the dashboard, and an earlier version that counted
+/// the first of several partial emissions recorded `result_count: 0` for a
+/// search that had found forty courts, while six of them were on screen.
+///
+/// Created per search, since its whole state is whether this one has been
+/// counted.
 class CourtSearchReport {
   CourtSearchReport(this._analytics, this._area);
 
@@ -35,6 +40,8 @@ class CourtSearchReport {
   }
 
   void failed(Object error) {
+    if (_reported) return;
+    _reported = true;
     unawaited(
       _analytics.log(
         AppEvents.courtsSearchFailed(

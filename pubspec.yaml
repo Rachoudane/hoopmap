@@ -37,8 +37,13 @@ dependencies:
   flutter_riverpod: ^3.3.2
   go_router: ^17.5.0
   cloud_firestore: ^6.8.0
-  firebase_core: ^4.13.0
-  firebase_auth: ^6.1.0
+  # 4.14.0 rewrote the Android plugin in Kotlin and moved customAuthDomain to
+  # another class; firebase_auth below 6.6.0 still referenced the old one and
+  # failed to compile against it. Both floors are raised together so the pair
+  # can never resolve back apart — a mismatch that only shows up in an Android
+  # build, which neither `flutter analyze` nor `flutter test` performs.
+  firebase_core: ^4.14.0
+  firebase_auth: ^6.6.1
   geolocator: ^14.0.3
   flutter_map: ^8.3.1
   latlong2: ^0.10.1

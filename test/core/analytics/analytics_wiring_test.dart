@@ -406,7 +406,7 @@ void main() {
   });
 
   group('searches', () {
-    test('one search is counted once, however many sources answer', () async {
+    test('one search is counted once, however many values follow', () async {
       final analytics = RecordingAnalyticsService();
       final courts = StreamController<List<Court>>();
       addTearDown(courts.close);
@@ -416,23 +416,22 @@ void main() {
           analytics: analytics,
         ),
       );
-      addTearDown(container.dispose);
-
       final subscription = container.listen(
         nearbyCourtsProvider,
         (previous, next) {},
       );
-      addTearDown(subscription.close);
 
-      // The composite repository answers once per source for a single
-      // search; counting both would double every number in the dashboard.
+      // The repository answers once, completely; a later value is a live
+      // update to a search already counted, not the same search answering
+      // twice.
       courts.add([_court('osm:way-1')]);
       await container.read(nearbyCourtsProvider.future);
       courts.add([_court('osm:way-1'), _court('firestore-1')]);
       await Future<void>.delayed(Duration.zero);
 
-      // The position fix reports itself too; what matters here is that the
-      // search reported once, with the first answer.
+      subscription.close();
+      container.dispose();
+
       expect(analytics.only('courts_searched'), [
         AppEvents.courtsSearched(
           area: CourtSearchArea.position,
@@ -452,14 +451,14 @@ void main() {
           city: browsableCities.first,
         ),
       );
-      addTearDown(container.dispose);
       final subscription = container.listen(
         nearbyCourtsProvider,
         (previous, next) {},
       );
-      addTearDown(subscription.close);
 
       await container.read(nearbyCourtsProvider.future);
+      subscription.close();
+      container.dispose();
 
       // No position was ever read, so nothing but the search is reported:
       // browsing Tokyo does not depend on Hoopmap knowing where you are.
